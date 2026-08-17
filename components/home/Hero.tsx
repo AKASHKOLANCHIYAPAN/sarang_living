@@ -40,7 +40,7 @@ export default function Hero() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="hero-tagline"
           >
-            <Heart size={14} fill="var(--color-accent-blush)" stroke="var(--color-accent-blush)" />
+            <Heart size={14} fill="#FF4B72" stroke="#FF4B72" />
             사랑 · Love every little thing
           </motion.p>
 
