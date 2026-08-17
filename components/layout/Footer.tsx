@@ -17,7 +17,7 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="footer-brand">
             <Link href="/" className="footer-logo">
-              <span className="header-logo-s">S</span>ARANG
+              <img src="/logo.png" alt="Sarang Living Logo" className="footer-logo-img" />
             </Link>
             <p className="footer-tagline">Love every little thing</p>
             <p className="footer-desc">

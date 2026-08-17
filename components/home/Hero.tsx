@@ -22,6 +22,16 @@ export default function Hero() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="hero-text"
         >
+          {/* Logo Badge */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="hero-logo-wrap"
+          >
+            <img src="/logo.png" alt="Sarang Living Logo" className="hero-logo-img" />
+          </motion.div>
+
           {/* Tagline */}
           <motion.p
             initial={{ opacity: 0, y: 10 }}

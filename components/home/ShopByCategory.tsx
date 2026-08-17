@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { categories } from '@/lib/products';
+import { categories, getProductsByCategorySlug } from '@/lib/products';
 import { getCategoryGradient } from '@/lib/utils';
 
 // Show the top categories with highest product counts
@@ -36,31 +36,46 @@ export default function ShopByCategory() {
 
         {/* Category Grid */}
         <div className="category-grid">
-          {featuredCategories.map((category, index) => (
-            <motion.div
-              key={category.slug}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-30px' }}
-              transition={{ duration: 0.5, delay: index * 0.08 }}
-            >
-              <Link
-                href={`/products?category=${category.slug}`}
-                className="category-tile"
+          {featuredCategories.map((category, index) => {
+            const catProducts = getProductsByCategorySlug(category.slug);
+            const featuredImg = catProducts.find((p) => p.images.length > 0)?.images[0];
+
+            return (
+              <motion.div
+                key={category.slug}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-30px' }}
+                transition={{ duration: 0.5, delay: index * 0.08 }}
               >
-                <div
-                  className="category-tile-image"
-                  style={{ background: getCategoryGradient(category.name) }}
+                <Link
+                  href={`/products?category=${category.slug}`}
+                  className="category-tile"
                 >
-                  <span className="category-tile-count">{category.productCount} items</span>
-                </div>
-                <div className="category-tile-info">
-                  <h3 className="category-tile-name">{category.name}</h3>
-                  <ArrowRight size={16} className="category-tile-arrow" />
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+                  <div className="category-tile-image-wrap">
+                    {featuredImg ? (
+                      <img
+                        src={featuredImg}
+                        alt={category.name}
+                        className="category-tile-img"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className="category-tile-image"
+                        style={{ background: getCategoryGradient(category.name) }}
+                      />
+                    )}
+                    <span className="category-tile-count">{category.productCount} items</span>
+                  </div>
+                  <div className="category-tile-info">
+                    <h3 className="category-tile-name">{category.name}</h3>
+                    <ArrowRight size={16} className="category-tile-arrow" />
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* View All */}

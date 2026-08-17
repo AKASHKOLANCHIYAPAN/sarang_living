@@ -69,9 +69,7 @@ export default function Header() {
 
           {/* Center: Logo */}
           <Link href="/" className="header-logo" aria-label="Sarang Living — Home">
-            <span className="header-logo-text">
-              <span className="header-logo-s">S</span>ARANG
-            </span>
+            <img src="/logo.png" alt="Sarang Living Logo" className="header-logo-img" />
           </Link>
 
           {/* Right: Icons */}

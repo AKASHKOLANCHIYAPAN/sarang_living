@@ -45,9 +45,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           >
             {/* Header */}
             <div className="mobile-menu-header">
-              <span className="mobile-menu-logo">
-                <span className="header-logo-s">S</span>ARANG
-              </span>
+              <Link href="/" onClick={onClose} className="mobile-menu-logo">
+                <img src="/logo.png" alt="Sarang Living Logo" className="mobile-menu-logo-img" />
+              </Link>
               <button onClick={onClose} className="mobile-menu-close" aria-label="Close menu" type="button">
                 <X size={20} />
               </button>
