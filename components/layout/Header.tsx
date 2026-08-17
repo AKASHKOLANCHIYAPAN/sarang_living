@@ -5,6 +5,7 @@ import { Search, User, ShoppingBag, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cartStore';
+import { getAssetPath } from '@/lib/utils';
 import MobileMenu from './MobileMenu';
 import CartDrawer from './CartDrawer';
 import SearchOverlay from './SearchOverlay';
@@ -69,7 +70,7 @@ export default function Header() {
 
           {/* Center: Logo */}
           <Link href="/" className="header-logo" aria-label="Sarang Living — Home">
-            <img src="/logo.png" alt="Sarang Living Logo" className="header-logo-img" />
+            <img src={getAssetPath('/logo.png')} alt="Sarang Living Logo" className="header-logo-img" />
           </Link>
 
           {/* Right: Icons */}

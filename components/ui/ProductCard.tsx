@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Product } from '@/lib/products';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, getAssetPath } from '@/lib/utils';
 import { useCartStore } from '@/store/cartStore';
 import ProductPlaceholder from './ProductPlaceholder';
 
@@ -36,7 +36,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         <div className="product-card-image-wrap">
           {product.images.length > 0 ? (
             <img
-              src={product.images[0]}
+              src={getAssetPath(product.images[0])}
               alt={product.name}
               className="product-card-image"
               loading="lazy"

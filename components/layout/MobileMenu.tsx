@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { X, ChevronRight, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { categories } from '@/lib/products';
+import { getAssetPath } from '@/lib/utils';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             {/* Header */}
             <div className="mobile-menu-header">
               <Link href="/" onClick={onClose} className="mobile-menu-logo">
-                <img src="/logo.png" alt="Sarang Living Logo" className="mobile-menu-logo-img" />
+                <img src={getAssetPath('/logo.png')} alt="Sarang Living Logo" className="mobile-menu-logo-img" />
               </Link>
               <button onClick={onClose} className="mobile-menu-close" aria-label="Close menu" type="button">
                 <X size={20} />

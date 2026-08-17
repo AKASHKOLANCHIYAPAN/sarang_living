@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import { getAssetPath } from '@/lib/utils';
 
 export default function Hero() {
   return (
@@ -29,7 +30,7 @@ export default function Hero() {
             transition={{ duration: 0.6 }}
             className="hero-logo-wrap"
           >
-            <img src="/logo.png" alt="Sarang Living Logo" className="hero-logo-img" />
+            <img src={getAssetPath('/logo.png')} alt="Sarang Living Logo" className="hero-logo-img" />
           </motion.div>
 
           {/* Tagline */}

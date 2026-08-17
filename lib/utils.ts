@@ -66,3 +66,24 @@ export function debounce<T extends (...args: Parameters<T>) => void>(
     timeoutId = setTimeout(() => func(...args), wait);
   };
 }
+
+/**
+ * Helper to resolve static asset paths for GitHub Pages or local environment
+ */
+export function getAssetPath(path: string | undefined | null): string {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+  let basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
+  if (typeof window !== 'undefined') {
+    const pathname = window.location.pathname;
+    if (pathname.startsWith('/sarang_living') && !basePath) {
+      basePath = '/sarang_living';
+    }
+  }
+
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (basePath && cleanPath.startsWith(basePath)) return cleanPath;
+  return `${basePath}${cleanPath}`;
+}

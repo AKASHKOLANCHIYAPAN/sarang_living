@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { categories, getProductsByCategorySlug } from '@/lib/products';
-import { getCategoryGradient } from '@/lib/utils';
+import { getCategoryGradient, getAssetPath } from '@/lib/utils';
 
 // Show the top categories with highest product counts
 const featuredCategories = categories
@@ -55,7 +55,7 @@ export default function ShopByCategory() {
                   <div className="category-tile-image-wrap">
                     {featuredImg ? (
                       <img
-                        src={featuredImg}
+                        src={getAssetPath(featuredImg)}
                         alt={category.name}
                         className="category-tile-img"
                         loading="lazy"

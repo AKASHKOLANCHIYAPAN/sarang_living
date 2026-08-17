@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Heart, Mail, MapPin, Phone } from 'lucide-react';
 import { categories } from '@/lib/products';
+import { getAssetPath } from '@/lib/utils';
 
 export default function Footer() {
   return (
@@ -17,7 +18,7 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="footer-brand">
             <Link href="/" className="footer-logo">
-              <img src="/logo.png" alt="Sarang Living Logo" className="footer-logo-img" />
+              <img src={getAssetPath('/logo.png')} alt="Sarang Living Logo" className="footer-logo-img" />
             </Link>
             <p className="footer-tagline">Love every little thing</p>
             <p className="footer-desc">

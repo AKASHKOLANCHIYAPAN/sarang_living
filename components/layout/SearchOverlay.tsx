@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { searchProducts } from '@/lib/products';
 import type { Product } from '@/lib/products';
-import { formatPrice, debounce } from '@/lib/utils';
+import { formatPrice, debounce, getAssetPath } from '@/lib/utils';
 import ProductPlaceholder from '@/components/ui/ProductPlaceholder';
 
 interface SearchOverlayProps {
@@ -103,7 +103,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     >
                       <div className="search-result-image">
                         {product.images.length > 0 ? (
-                          <img src={product.images[0]} alt={product.name} />
+                          <img src={getAssetPath(product.images[0])} alt={product.name} />
                         ) : (
                           <ProductPlaceholder category={product.category} sku={product.sku} />
                         )}

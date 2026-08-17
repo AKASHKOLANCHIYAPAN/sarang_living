@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   ...(repo ? { basePath: repo, assetPrefix: repo } : {}),
+  env: {
+    NEXT_PUBLIC_BASE_PATH: repo,
+  },
 };
 
 export default nextConfig;

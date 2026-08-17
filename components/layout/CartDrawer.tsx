@@ -4,7 +4,7 @@ import { X, Trash2, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, getAssetPath } from '@/lib/utils';
 import QuantitySelector from '@/components/ui/QuantitySelector';
 import ProductPlaceholder from '@/components/ui/ProductPlaceholder';
 import Button from '@/components/ui/Button';
@@ -108,7 +108,7 @@ export default function CartDrawer() {
                       <div className="cart-item-image">
                         {item.product.images.length > 0 ? (
                           <img
-                            src={item.product.images[0]}
+                            src={getAssetPath(item.product.images[0])}
                             alt={item.product.name}
                             className="cart-item-img"
                           />

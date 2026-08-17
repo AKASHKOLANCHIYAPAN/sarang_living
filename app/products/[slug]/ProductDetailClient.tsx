@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Heart, Share2, ChevronRight, Check, Truck } from 'lucide-react';
 import { getProductBySlug, getRelatedProducts } from '@/lib/products';
-import { formatPrice, getCategoryGradient } from '@/lib/utils';
+import { formatPrice, getCategoryGradient, getAssetPath } from '@/lib/utils';
 import { useCartStore } from '@/store/cartStore';
 import QuantitySelector from '@/components/ui/QuantitySelector';
 import Button from '@/components/ui/Button';
@@ -69,7 +69,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
             <div className="pdp-main-image">
               {product.images.length > 0 ? (
                 <img
-                  src={product.images[0]}
+                  src={getAssetPath(product.images[0])}
                   alt={product.name}
                   className="pdp-image"
                 />
@@ -93,7 +93,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
               <div className="pdp-thumbnails">
                 {product.images.map((img, i) => (
                   <button key={i} className="pdp-thumb" type="button">
-                    <img src={img} alt={`${product.name} - view ${i + 1}`} />
+                    <img src={getAssetPath(img)} alt={`${product.name} - view ${i + 1}`} />
                   </button>
                 ))}
               </div>
