@@ -1665,6 +1665,31 @@ body.drawer-open {
   box-shadow: 0 2px 8px rgba(255, 75, 114, 0.3);
 }
 
+.product-card-rating-badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  color: var(--color-text-primary);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 182, 176, 0.15);
+  z-index: 2;
+}
+
+.product-card-rating-badge .star-icon {
+  color: #FCC917;
+  font-size: 12px;
+}
+
 .product-card-info {
   padding: var(--space-3) var(--space-4) var(--space-4);
 }

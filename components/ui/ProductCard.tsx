@@ -45,6 +45,12 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             <ProductPlaceholder category={product.category} sku={product.sku} />
           )}
 
+          {/* Star Rating Badge */}
+          <div className="product-card-rating-badge">
+            <span className="star-icon">★</span>
+            <span>4.9</span>
+          </div>
+
           {/* Quick Add Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -54,8 +60,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             aria-label={`Add ${product.name} to cart`}
             type="button"
           >
-            <ShoppingBag size={16} />
-            <span>Add</span>
+            <ShoppingBag size={15} />
+            <span>+ Add</span>
           </motion.button>
 
           {/* Sale Badge */}
