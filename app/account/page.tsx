@@ -193,7 +193,7 @@ export default function AccountPage() {
 
               {user.orders && user.orders.length > 0 ? (
                 <div className="orders-list">
-                  {user.orders.map((order) => (
+                  {user.orders.map((order: any) => (
                     <div key={order.id} className="order-card">
                       <div className="order-header">
                         <div>
@@ -206,7 +206,7 @@ export default function AccountPage() {
                       </div>
 
                       <div className="order-items">
-                        {order.items.map((item) => (
+                        {order.items.map((item: any) => (
                           <div key={item.id} className="order-item-row">
                             <div className="order-item-info">
                               <span className="order-item-title">{item.title}</span>
