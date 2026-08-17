@@ -3,7 +3,11 @@ import { cookies } from 'next/headers';
 import { UserRepository } from '@/lib/auth/userRepository';
 import { hashPassword, signToken, AUTH_COOKIE_NAME } from '@/lib/auth/jwt';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
+
+export async function GET() {
+  return NextResponse.json({ message: 'Auth Register API endpoint' });
+}
 
 export async function POST(request: Request) {
   try {

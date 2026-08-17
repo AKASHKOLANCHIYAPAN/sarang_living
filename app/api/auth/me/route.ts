@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { UserRepository, toSafeUser } from '@/lib/auth/userRepository';
 import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/auth/jwt';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 
 export async function GET() {
   try {
@@ -40,7 +40,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       { user: null, authenticated: false },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
