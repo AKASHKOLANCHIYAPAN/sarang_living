@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -57,8 +57,8 @@
   --color-info: #00B6B0;
 
   /* ─── Typography ─── */
-  --font-display: 'Fredoka', 'Poppins', sans-serif;
-  --font-body: 'Poppins', 'Fredoka', sans-serif;
+  --font-display: 'Plus Jakarta Sans', var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif;
 
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
