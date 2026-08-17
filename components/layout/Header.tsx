@@ -5,6 +5,7 @@ import { Search, User, ShoppingBag, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cartStore';
+import { useAuthStore } from '@/store/authStore';
 import { getAssetPath } from '@/lib/utils';
 import MobileMenu from './MobileMenu';
 import CartDrawer from './CartDrawer';
@@ -23,6 +24,12 @@ export default function Header() {
   const isCartOpen = useCartStore((s) => s.isCartOpen);
   const toggleCart = useCartStore((s) => s.toggleCart);
   const totalItems = useCartStore((s) => s.totalItems);
+
+  const { user, isAuthenticated, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -84,8 +91,19 @@ export default function Header() {
               <Search size={20} />
             </button>
 
-            <Link href="/account" className="header-icon-btn header-icon-desktop" aria-label="Account">
-              <User size={20} />
+            <Link
+              href={isAuthenticated ? '/account' : '/login'}
+              className="header-icon-btn header-icon-desktop"
+              aria-label={isAuthenticated ? `Account (${user?.name})` : 'Sign In'}
+              title={isAuthenticated ? `Logged in as ${user?.name}` : 'Sign In / Register'}
+            >
+              {isAuthenticated && user ? (
+                <span className="header-user-avatar">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <User size={20} />
+              )}
             </Link>
 
             <button

@@ -99,6 +99,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
             {/* Footer */}
             <div className="mobile-menu-footer">
+              <Link
+                href="/account"
+                onClick={onClose}
+                className="mobile-menu-account-btn"
+              >
+                Account Profile & Orders
+              </Link>
               <p className="mobile-menu-tagline">
                 <Heart size={12} fill="var(--color-accent-blush)" stroke="var(--color-accent-blush)" />
                 Love every little thing

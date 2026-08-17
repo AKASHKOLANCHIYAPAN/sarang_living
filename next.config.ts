@@ -11,7 +11,7 @@ if (isGithubActions) {
 }
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  ...(isGithubActions ? { output: 'export' } : {}),
   images: {
     unoptimized: true,
   },
