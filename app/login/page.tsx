@@ -2,48 +2,38 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Mail,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-  ArrowRight,
+  Phone,
+  ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  ShieldCheck,
-  KeyRound,
+  ArrowRight,
   Zap,
-  Sparkles,
+  RotateCcw,
+  User,
+  Edit2,
+  Lock,
 } from 'lucide-react';
-import { useAuthStore, isValidEmail } from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
 
-function LoginFormContent() {
+function PhoneOtpLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect') || '/account';
 
-  const { login, register, resetPassword, isAuthenticated, checkAuth, isLoading, setUser } = useAuthStore();
+  const { sendPhoneOtp, verifyPhoneOtp, isAuthenticated, checkAuth, isLoading, setUser } = useAuthStore();
 
-  const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
-  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  // Register form state
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-
-  // Forgot password state
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotLoading, setForgotLoading] = useState(false);
+  // Resend OTP countdown timer
+  const [timer, setTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -55,18 +45,93 @@ function LoginFormContent() {
     }
   }, [isAuthenticated, router, redirectPath]);
 
-  // Real-time email validation status
-  const activeEmail = tab === 'login' ? loginEmail : tab === 'register' ? regEmail : forgotEmail;
-  const isEmailValid = activeEmail.length > 0 && isValidEmail(activeEmail);
-  const isEmailInvalid = activeEmail.length > 3 && !isEmailValid;
+  useEffect(() => {
+    let interval: any = null;
+    if (step === 'otp' && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      setCanResend(true);
+    }
+    return () => clearInterval(interval);
+  }, [step, timer]);
 
-  const handleDemoSignIn = () => {
+  const cleanPhoneInput = (val: string) => {
+    return val.replace(/[^0-9]/g, '').slice(0, 10);
+  };
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
-    setSuccess('Signed in as Demo Member! Redirecting...');
+    setSuccess(null);
+
+    const cleanNum = cleanPhoneInput(phone);
+    if (cleanNum.length < 10) {
+      setError('Please enter a valid 10-digit mobile phone number.');
+      return;
+    }
+
+    const res = await sendPhoneOtp(cleanNum);
+    if (!res.success) {
+      setError(res.error || 'Failed to send OTP.');
+    } else {
+      setStep('otp');
+      setTimer(30);
+      setCanResend(false);
+      setSuccess(res.message || 'OTP sent successfully!');
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (otp.length < 6) {
+      setError('Please enter the 6-digit OTP code.');
+      return;
+    }
+
+    const res = await verifyPhoneOtp(phone, otp, name);
+    if (!res.success) {
+      setError(res.error || 'Invalid OTP code. Please try again.');
+    } else {
+      setSuccess('Phone number verified! Redirecting to your account...');
+      setTimeout(() => {
+        router.push(redirectPath);
+      }, 600);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!canResend) return;
+    setError(null);
+    setSuccess(null);
+    const res = await sendPhoneOtp(phone);
+    if (res.success) {
+      setTimer(30);
+      setCanResend(false);
+      setSuccess('A new OTP has been sent to your phone.');
+    } else {
+      setError(res.error || 'Failed to resend OTP.');
+    }
+  };
+
+  const handleAutoFillDemo = () => {
+    setPhone('9876543210');
+    setOtp('123456');
+    setName('Demo Member');
+    setError(null);
+    setSuccess('Demo credentials auto-filled! Click "Verify OTP & Continue".');
+    setStep('otp');
+  };
+
+  const handle1ClickInstantDemo = () => {
     setUser({
-      id: 'demo_user_101',
+      id: 'demo_user_phone',
       name: 'Eleanor Vance',
-      email: 'eleanor.vance@sarangliving.com',
+      phone: '+91 98765 43210',
       role: 'VIP Member',
       createdAt: new Date().toISOString(),
       orders: [
@@ -82,13 +147,6 @@ function LoginFormContent() {
               price: 18,
               quantity: 2,
               image: '/products/SL001.png',
-            },
-            {
-              id: 'sl-002',
-              title: 'Silk Organza Scrunchie',
-              price: 14,
-              quantity: 1,
-              image: '/products/SL002.png',
             },
           ],
         },
@@ -106,87 +164,10 @@ function LoginFormContent() {
       ],
     });
 
+    setSuccess('Signed in as Demo Member! Redirecting...');
     setTimeout(() => {
       router.push(redirectPath);
     }, 600);
-  };
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!loginEmail || !loginPassword) {
-      setError('Please fill in all fields.');
-      return;
-    }
-
-    if (!isValidEmail(loginEmail)) {
-      setError('Please enter a valid, authentic email address (e.g. name@example.com).');
-      return;
-    }
-
-    const result = await login(loginEmail, loginPassword);
-    if (!result.success) {
-      setError(result.error || 'Failed to sign in.');
-    } else {
-      setSuccess('Successfully authenticated! Redirecting...');
-      setTimeout(() => {
-        router.push(redirectPath);
-      }, 600);
-    }
-  };
-
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!regName || !regEmail || !regPassword) {
-      setError('Please fill in all required fields.');
-      return;
-    }
-
-    if (!isValidEmail(regEmail)) {
-      setError('Please enter a valid, authentic email address (e.g. name@example.com).');
-      return;
-    }
-
-    if (regPassword.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    const result = await register(regName, regEmail, regPassword);
-    if (!result.success) {
-      setError(result.error || 'Registration failed.');
-    } else {
-      setSuccess('Account created successfully! Welcome to Sarang Living.');
-      setTimeout(() => {
-        router.push(redirectPath);
-      }, 600);
-    }
-  };
-
-  const handleForgotSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!forgotEmail || !isValidEmail(forgotEmail)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    setForgotLoading(true);
-    const res = await resetPassword(forgotEmail);
-    setForgotLoading(false);
-
-    if (!res.success) {
-      setError(res.error || 'Failed to send reset email.');
-    } else {
-      setSuccess(res.message || 'Password reset link sent to your email.');
-    }
   };
 
   return (
@@ -202,52 +183,18 @@ function LoginFormContent() {
           <div className="auth-header">
             <div className="auth-badge-pill">
               <ShieldCheck size={13} className="text-teal" />
-              <span>SARANG LIVING MEMBER AUTH</span>
+              <span>PHONE OTP VERIFICATION</span>
             </div>
 
             <h1 className="auth-title">
-              {tab === 'login' && 'Welcome Back'}
-              {tab === 'register' && 'Create Account'}
-              {tab === 'forgot' && 'Reset Password'}
+              {step === 'phone' ? 'Mobile Sign In' : 'Enter OTP Code'}
             </h1>
 
             <p className="auth-subtitle">
-              {tab === 'login' && 'Sign in to access your orders, addresses, and wishlist.'}
-              {tab === 'register' && 'Join Sarang Living for fast checkout and exclusive perks.'}
-              {tab === 'forgot' && 'Enter your email to receive a password reset link.'}
+              {step === 'phone'
+                ? 'Enter your 10-digit mobile number to receive a 6-digit verification code.'
+                : `We sent a 6-digit OTP code to +91 ${phone}`}
             </p>
-
-            {/* Navigation Tabs */}
-            {tab !== 'forgot' && (
-              <div className="auth-tabs" role="tablist">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === 'login'}
-                  className={`auth-tab ${tab === 'login' ? 'active' : ''}`}
-                  onClick={() => {
-                    setTab('login');
-                    setError(null);
-                    setSuccess(null);
-                  }}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === 'register'}
-                  className={`auth-tab ${tab === 'register' ? 'active' : ''}`}
-                  onClick={() => {
-                    setTab('register');
-                    setError(null);
-                    setSuccess(null);
-                  }}
-                >
-                  Register
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Feedback Alerts */}
@@ -277,231 +224,143 @@ function LoginFormContent() {
             )}
           </AnimatePresence>
 
-          {/* Login Form */}
-          {tab === 'login' && (
-            <form onSubmit={handleLoginSubmit} className="auth-form">
+          {/* Step 1: Phone Input */}
+          {step === 'phone' && (
+            <form onSubmit={handleSendOtp} className="auth-form">
               <div className="auth-input-group">
-                <div className="auth-label-row">
-                  <label htmlFor="login-email">Email Address</label>
-                  {isEmailValid && (
-                    <span className="auth-valid-tag">
-                      <CheckCircle2 size={12} /> Valid Format
-                    </span>
-                  )}
-                </div>
-                <div className={`auth-input-wrapper ${isEmailInvalid ? 'input-error' : ''} ${isEmailValid ? 'input-valid' : ''}`}>
-                  <Mail size={18} className="auth-input-icon" />
-                  <input
-                    id="login-email"
-                    type="email"
-                    placeholder="name@domain.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-                {isEmailInvalid && (
-                  <span className="auth-field-error">Please enter a valid email address (e.g., user@example.com)</span>
-                )}
-              </div>
-
-              <div className="auth-input-group">
-                <div className="auth-label-row">
-                  <label htmlFor="login-password">Password</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTab('forgot');
-                      setError(null);
-                      setSuccess(null);
-                    }}
-                    className="auth-forgot-link"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+                <label htmlFor="phone-input">Mobile Phone Number</label>
                 <div className="auth-input-wrapper">
-                  <Lock size={18} className="auth-input-icon" />
+                  <div className="auth-country-prefix">+91</div>
                   <input
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    autoComplete="current-password"
+                    id="phone-input"
+                    type="tel"
+                    placeholder="98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(cleanPhoneInput(e.target.value))}
+                    autoComplete="tel"
                     required
                   />
-                  <button
-                    type="button"
-                    className="auth-toggle-pwd"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+                  <Phone size={18} className="auth-input-icon" />
                 </div>
               </div>
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || phone.length < 10}
                 className="auth-submit-btn"
               >
                 {isLoading ? (
-                  <span className="auth-spinner">Authenticating...</span>
+                  <span className="auth-spinner">Sending OTP...</span>
                 ) : (
                   <>
-                    Sign In <ArrowRight size={18} />
+                    Send Verification OTP <ArrowRight size={18} />
                   </>
                 )}
               </button>
 
-              {/* Quick 1-Click Demo Login */}
               <button
                 type="button"
-                onClick={handleDemoSignIn}
+                onClick={handle1ClickInstantDemo}
                 className="auth-demo-btn"
               >
-                <Zap size={16} /> 1-Click Quick Demo Sign-In
+                <Zap size={16} /> 1-Click Instant Demo Login
               </button>
             </form>
           )}
 
-          {/* Registration Form */}
-          {tab === 'register' && (
-            <form onSubmit={handleRegisterSubmit} className="auth-form">
+          {/* Step 2: 6-Digit OTP Verification */}
+          {step === 'otp' && (
+            <form onSubmit={handleVerifyOtp} className="auth-form">
+              <div className="auth-phone-summary">
+                <div className="flex items-center gap-2">
+                  <Phone size={14} className="text-teal-400" />
+                  <span className="font-mono text-sm font-semibold">+91 {phone}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('phone');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  className="auth-edit-phone-btn"
+                >
+                  <Edit2 size={12} /> Edit
+                </button>
+              </div>
+
               <div className="auth-input-group">
-                <label htmlFor="reg-name">Full Name</label>
+                <label htmlFor="otp-input">6-Digit Verification Code</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    id="otp-input"
+                    type="text"
+                    placeholder="123456"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="auth-otp-field"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label htmlFor="name-input">Your Full Name (Optional for first-time login)</label>
                 <div className="auth-input-wrapper">
                   <User size={18} className="auth-input-icon" />
                   <input
-                    id="reg-name"
+                    id="name-input"
                     type="text"
                     placeholder="Eleanor Vance"
-                    value={regName}
-                    onChange={(e) => setRegName(e.target.value)}
-                    autoComplete="name"
-                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                   />
-                </div>
-              </div>
-
-              <div className="auth-input-group">
-                <div className="auth-label-row">
-                  <label htmlFor="reg-email">Email Address</label>
-                  {isEmailValid && (
-                    <span className="auth-valid-tag">
-                      <CheckCircle2 size={12} /> Valid Format
-                    </span>
-                  )}
-                </div>
-                <div className={`auth-input-wrapper ${isEmailInvalid ? 'input-error' : ''} ${isEmailValid ? 'input-valid' : ''}`}>
-                  <Mail size={18} className="auth-input-icon" />
-                  <input
-                    id="reg-email"
-                    type="email"
-                    placeholder="name@domain.com"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="auth-input-group">
-                <label htmlFor="reg-password">Password (Min. 6 chars)</label>
-                <div className="auth-input-wrapper">
-                  <Lock size={18} className="auth-input-icon" />
-                  <input
-                    id="reg-password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="At least 6 characters"
-                    value={regPassword}
-                    onChange={(e) => setRegPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="auth-toggle-pwd"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
                 </div>
               </div>
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || otp.length < 6}
                 className="auth-submit-btn"
               >
                 {isLoading ? (
-                  <span className="auth-spinner">Creating Account...</span>
+                  <span className="auth-spinner">Verifying OTP...</span>
                 ) : (
                   <>
-                    Create Account <Sparkles size={18} />
+                    Verify OTP & Continue <CheckCircle2 size={18} />
                   </>
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={handleDemoSignIn}
-                className="auth-demo-btn"
-              >
-                <Zap size={16} /> 1-Click Quick Demo Sign-In
-              </button>
-            </form>
-          )}
+              <div className="auth-resend-row">
+                {canResend ? (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="auth-resend-btn"
+                  >
+                    <RotateCcw size={14} /> Resend OTP Code
+                  </button>
+                ) : (
+                  <span className="auth-timer-text">Resend OTP in <strong>{timer}s</strong></span>
+                )}
 
-          {/* Reset Password Form */}
-          {tab === 'forgot' && (
-            <form onSubmit={handleForgotSubmit} className="auth-form">
-              <div className="auth-input-group">
-                <label htmlFor="forgot-email">Email Address</label>
-                <div className={`auth-input-wrapper ${isEmailInvalid ? 'input-error' : ''} ${isEmailValid ? 'input-valid' : ''}`}>
-                  <Mail size={18} className="auth-input-icon" />
-                  <input
-                    id="forgot-email"
-                    type="email"
-                    placeholder="name@domain.com"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    required
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={handleAutoFillDemo}
+                  className="auth-autofill-btn"
+                >
+                  <Zap size={13} /> Auto-fill Demo OTP (123456)
+                </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={forgotLoading}
-                className="auth-submit-btn"
-              >
-                {forgotLoading ? (
-                  <span className="auth-spinner">Sending...</span>
-                ) : (
-                  <>
-                    Send Reset Link <KeyRound size={18} />
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setTab('login');
-                  setError(null);
-                  setSuccess(null);
-                }}
-                className="auth-back-btn"
-              >
-                ← Back to Sign In
-              </button>
             </form>
           )}
+
+          <div className="auth-footer-note">
+            No password required. Phone OTP verification protects your account.
+          </div>
         </motion.div>
       </div>
     </div>
@@ -515,7 +374,7 @@ export default function LoginPage() {
         <div className="account-spinner">Loading authentication...</div>
       </div>
     }>
-      <LoginFormContent />
+      <PhoneOtpLoginContent />
     </Suspense>
   );
 }

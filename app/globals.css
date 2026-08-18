@@ -946,6 +946,102 @@ body.drawer-open {
   color: var(--color-text-primary);
 }
 
+.auth-back-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.auth-country-prefix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--color-accent-teal);
+  background: var(--color-bg-subtle);
+  border-right: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  user-select: none;
+}
+
+.auth-otp-field {
+  letter-spacing: 0.3em;
+  font-family: monospace;
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.auth-phone-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
+.auth-edit-phone-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent-teal);
+  cursor: pointer;
+}
+
+.auth-edit-phone-btn:hover {
+  text-decoration: underline;
+}
+
+.auth-resend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-4);
+  font-size: var(--text-xs);
+}
+
+.auth-resend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--color-accent-teal);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-resend-btn:hover {
+  text-decoration: underline;
+}
+
+.auth-timer-text {
+  color: var(--color-text-tertiary);
+}
+
+.auth-autofill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #803CEE;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-autofill-btn:hover {
+  text-decoration: underline;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SEARCH OVERLAY
    ═══════════════════════════════════════════════════════════════ */

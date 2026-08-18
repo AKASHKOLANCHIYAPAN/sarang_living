@@ -30,8 +30,9 @@ export interface Order {
 export interface User {
   id: string;
   name: string;
-  email: string;
-  passwordHash: string;
+  email?: string;
+  phone?: string;
+  passwordHash?: string;
   createdAt: string;
   addresses: Address[];
   orders: Order[];
@@ -71,7 +72,7 @@ export const UserRepository = {
   async findByEmail(email: string): Promise<User | null> {
     const users = await readUsers();
     const normalizedEmail = email.trim().toLowerCase();
-    const user = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+    const user = users.find((u) => u.email?.toLowerCase() === normalizedEmail);
     return user || null;
   },
 
@@ -85,7 +86,7 @@ export const UserRepository = {
     const users = await readUsers();
     const normalizedEmail = data.email.trim().toLowerCase();
 
-    const existing = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+    const existing = users.find((u) => u.email?.toLowerCase() === normalizedEmail);
     if (existing) {
       throw new Error('An account with this email address already exists.');
     }

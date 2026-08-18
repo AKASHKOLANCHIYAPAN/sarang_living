@@ -80,7 +80,7 @@ export default function AccountPage() {
         <div className="account-header-info">
           <span className="account-badge">VALUED MEMBER</span>
           <h1 className="account-user-name">{user.name}</h1>
-          <p className="account-user-email">{user.email}</p>
+          <p className="account-user-email">{user.phone || user.email}</p>
           <div className="account-meta">
             <span className="account-meta-item">
               <Clock size={14} /> Member since {formatDate(user.createdAt)}
@@ -154,8 +154,8 @@ export default function AccountPage() {
                   <span className="box-value">{user.name}</span>
                 </div>
                 <div className="info-box">
-                  <span className="box-label">Email Address</span>
-                  <span className="box-value">{user.email}</span>
+                  <span className="box-label">Verified Contact</span>
+                  <span className="box-value">{user.phone || user.email}</span>
                 </div>
                 <div className="info-box">
                   <span className="box-label">Account Identifier</span>

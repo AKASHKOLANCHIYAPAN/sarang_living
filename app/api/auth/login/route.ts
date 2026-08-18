@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const isValid = verifyPassword(password, user.passwordHash);
+    const isValid = user.passwordHash ? verifyPassword(password, user.passwordHash) : false;
     if (!isValid) {
       return NextResponse.json(
         { error: 'Invalid email or password.' },
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const safeUser = toSafeUser(user);
     const token = signToken({
       userId: safeUser.id,
-      email: safeUser.email,
+      email: safeUser.email || '',
       name: safeUser.name,
     });
 
