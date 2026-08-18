@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const announcements = [
-  { icon: Truck, text: '✨ Free Express Shipping on orders above $99 — Code: UNISEOUL ✨' },
+  { icon: Truck, text: '✨ Free Express Shipping on orders above $99 — Code: SARANG10 ✨' },
   { icon: MapPin, text: 'Authentic Korean Hair Accessories & Lifestyle Essentials' },
   { icon: RotateCcw, text: 'Easy 7-Day Returns & Worldwide Dispatch' },
 ];
