@@ -77,6 +77,13 @@ export function isValidEmail(email: string): boolean {
   return true;
 }
 
+function getBasePath(): string {
+  if (typeof window !== 'undefined') {
+    return process.env.NEXT_PUBLIC_BASE_PATH || '';
+  }
+  return '';
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -142,41 +149,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Phone OTP — Uses real server-side API endpoints
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   sendPhoneOtp: async (phone) => {
     set({ isLoading: true });
     const cleanPhone = phone.replace(/[^0-9]/g, '');
 
     if (!cleanPhone || cleanPhone.length < 10) {
       set({ isLoading: false });
-      return { success: false, error: 'Please enter a valid 10-digit mobile phone number.' };
+      return { success: false, error: 'Please enter a valid 10-digit mobile number.' };
     }
 
-    const fullPhone = cleanPhone.length === 10 ? `+91${cleanPhone}` : `+${cleanPhone}`;
-
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: fullPhone,
+      const basePath = getBasePath();
+      const res = await fetch(`${basePath}/api/auth/phone/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone }),
       });
 
-      if (error) {
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
         set({ isLoading: false });
-        let errMsg = error.message;
-        if (errMsg.includes('sms_provider_not_configured') || errMsg.includes('provider')) {
-          errMsg = 'SMS Provider configuration required in Supabase dashboard. Please configure Twilio or Fast2SMS gateway.';
-        }
-        return { success: false, error: errMsg };
+        return { success: false, error: data.error || 'Failed to send verification code.' };
       }
 
       set({ isLoading: false });
       return {
         success: true,
-        message: `Real SMS OTP dispatched to ${fullPhone}. Please enter the 6-digit code received on your phone.`,
+        message: data.message || 'Verification code sent to your mobile number.',
       };
     } catch (err: any) {
       set({ isLoading: false });
       return {
         success: false,
-        error: err.message || 'Failed to dispatch real SMS OTP to your phone.',
+        error: err.message || 'Network error. Please check your connection.',
       };
     }
   },
@@ -188,32 +198,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!cleanOtp || cleanOtp.length !== 6) {
       set({ isLoading: false });
-      return { success: false, error: 'Please enter the 6-digit OTP code sent via SMS.' };
+      return { success: false, error: 'Please enter the 6-digit verification code.' };
     }
 
-    const fullPhone = cleanPhone.length === 10 ? `+91${cleanPhone}` : `+${cleanPhone}`;
-
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: fullPhone,
-        token: cleanOtp,
-        type: 'sms',
+      const basePath = getBasePath();
+      const res = await fetch(`${basePath}/api/auth/phone/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone, otp: cleanOtp, name: name?.trim() }),
       });
 
-      if (error || !data?.user) {
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
         set({ isLoading: false });
-        return {
-          success: false,
-          error: error?.message || 'Invalid or expired SMS OTP code. Please request a new OTP.',
-        };
+        return { success: false, error: data.error || 'Verification failed. Please try again.' };
       }
 
-      const user = data.user;
       const authenticatedUser: AuthUser = {
-        id: user.id,
-        name: name?.trim() || user.user_metadata?.full_name || `Member ${cleanPhone.slice(-4)}`,
-        phone: fullPhone,
-        createdAt: user.created_at,
+        id: data.user.id,
+        name: data.user.name,
+        phone: data.user.phone,
+        createdAt: data.user.createdAt,
         orders: [],
         addresses: [],
       };
@@ -225,16 +232,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
       return {
         success: false,
-        error: err.message || 'Failed to verify SMS OTP.',
+        error: err.message || 'Network error during verification.',
       };
     }
   },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Email/Password Auth (existing Supabase flow)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   login: async (email, password) => {
     set({ isLoading: true });
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Strict Email Format Check
     if (!isValidEmail(normalizedEmail)) {
       set({ isLoading: false });
       return {
@@ -249,7 +259,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
-      // Attempt Supabase Authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
@@ -291,7 +300,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error('Supabase login exception:', err);
     }
 
-    // Check if user session exists in local fallback storage
     const savedUser = getLocalSession();
     if (savedUser && savedUser.email?.toLowerCase() === normalizedEmail) {
       set({ user: savedUser, isAuthenticated: true, isInitialized: true, isLoading: false });
@@ -315,7 +323,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: false, error: 'Please enter your full name.' };
     }
 
-    // Strict Email Format Check
     if (!isValidEmail(normalizedEmail)) {
       set({ isLoading: false });
       return {
@@ -358,7 +365,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data?.user) {
         const user = data.user;
 
-        // Save or update profile in Database
         try {
           await supabase.from('profiles').upsert({
             id: user.id,
@@ -385,7 +391,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error('Supabase registration error:', err);
     }
 
-    // Direct fallback user creation if network error
     const fallbackUser: AuthUser = {
       id: `user_${Date.now()}`,
       name: cleanName,

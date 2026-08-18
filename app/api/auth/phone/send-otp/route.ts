@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { generateOtp, storeOtp, sendOtpSms, isValidIndianPhone, formatPhone } from '@/lib/otp';
 
 export const dynamic = 'force-static';
 
 export async function GET() {
-  return NextResponse.json({ message: 'Phone Send OTP API Endpoint' });
+  return NextResponse.json({ status: 'ok', endpoint: 'send-otp' });
 }
 
 export async function POST(request: Request) {
@@ -14,40 +14,53 @@ export async function POST(request: Request) {
 
     if (!phone) {
       return NextResponse.json(
-        { error: 'Phone number is required.' },
+        { success: false, error: 'Phone number is required.' },
         { status: 400 }
       );
     }
 
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    if (cleanPhone.length < 10) {
+    // Validate Indian mobile number format
+    if (!isValidIndianPhone(phone)) {
       return NextResponse.json(
-        { error: 'Please enter a valid 10-digit mobile phone number.' },
+        { success: false, error: 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' },
         { status: 400 }
       );
     }
 
-    const formattedPhone = cleanPhone.length === 10 ? `+91${cleanPhone}` : `+${cleanPhone}`;
+    // Generate OTP
+    const otpCode = generateOtp();
 
-    // Dispatch real SMS OTP via Supabase Auth SMS Provider
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: formattedPhone,
-    });
-
-    if (error) {
+    // Store OTP with rate limiting
+    const storeResult = storeOtp(phone, otpCode);
+    if (!storeResult.success) {
       return NextResponse.json(
-        { error: error.message || 'Failed to dispatch SMS OTP. Please check SMS gateway configuration.' },
-        { status: 400 }
+        { success: false, error: storeResult.error },
+        { status: 429 }
+      );
+    }
+
+    // Send OTP via SMS
+    const smsResult = await sendOtpSms(phone, otpCode);
+
+    const formattedPhone = formatPhone(phone);
+    const maskedPhone = formattedPhone.slice(0, 6) + '****' + formattedPhone.slice(-2);
+
+    if (!smsResult.sent) {
+      return NextResponse.json(
+        { success: false, error: smsResult.error || 'Failed to send SMS. Please try again.' },
+        { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: `Real SMS OTP dispatched to ${formattedPhone}. Please check your phone text messages.`,
+      message: `Verification code sent to ${maskedPhone}`,
+      expiresIn: 300, // 5 minutes
     });
   } catch (error: any) {
+    console.error('Send OTP error:', error);
     return NextResponse.json(
-      { error: error.message || 'Server error dispatching SMS OTP.' },
+      { success: false, error: 'Server error. Please try again.' },
       { status: 500 }
     );
   }
