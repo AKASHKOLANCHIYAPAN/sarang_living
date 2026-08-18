@@ -13,7 +13,9 @@ import SearchOverlay from './SearchOverlay';
 
 const navLinks = [
   { label: 'Shop All', href: '/products' },
-  { label: 'New Arrivals', href: '/products?sort=newest' },
+  { label: 'Claw Clips', href: '/products?category=claw-clips' },
+  { label: 'Scrunchies', href: '/products?category=scrunchies' },
+  { label: 'Hair Bows', href: '/products?category=hair-bows' },
   { label: 'Bestsellers', href: '/products?sort=bestsellers' },
 ];
 

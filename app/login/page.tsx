@@ -15,6 +15,7 @@ import {
   AlertCircle,
   ShieldCheck,
   KeyRound,
+  Zap,
   Sparkles,
 } from 'lucide-react';
 import { useAuthStore, isValidEmail } from '@/store/authStore';
@@ -24,7 +25,7 @@ function LoginFormContent() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect') || '/account';
 
-  const { login, register, resetPassword, isAuthenticated, checkAuth, isLoading } = useAuthStore();
+  const { login, register, resetPassword, isAuthenticated, checkAuth, isLoading, setUser } = useAuthStore();
 
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -59,6 +60,57 @@ function LoginFormContent() {
   const isEmailValid = activeEmail.length > 0 && isValidEmail(activeEmail);
   const isEmailInvalid = activeEmail.length > 3 && !isEmailValid;
 
+  const handleDemoSignIn = () => {
+    setError(null);
+    setSuccess('Signed in as Demo Member! Redirecting...');
+    setUser({
+      id: 'demo_user_101',
+      name: 'Eleanor Vance',
+      email: 'eleanor.vance@sarangliving.com',
+      role: 'VIP Member',
+      createdAt: new Date().toISOString(),
+      orders: [
+        {
+          id: 'ORD-9842',
+          date: new Date().toISOString(),
+          total: 89,
+          status: 'Shipped',
+          items: [
+            {
+              id: 'sl-001',
+              title: 'Pastel Matte Claw Clip Set',
+              price: 18,
+              quantity: 2,
+              image: '/products/SL001.png',
+            },
+            {
+              id: 'sl-002',
+              title: 'Silk Organza Scrunchie',
+              price: 14,
+              quantity: 1,
+              image: '/products/SL002.png',
+            },
+          ],
+        },
+      ],
+      addresses: [
+        {
+          id: 'addr_demo_1',
+          street: '742 Korean Fashion Ave, Suite 300',
+          city: 'New York',
+          state: 'NY',
+          zipCode: '10001',
+          country: 'United States',
+          isDefault: true,
+        },
+      ],
+    });
+
+    setTimeout(() => {
+      router.push(redirectPath);
+    }, 600);
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -70,7 +122,7 @@ function LoginFormContent() {
     }
 
     if (!isValidEmail(loginEmail)) {
-      setError('Please enter a valid, original email address (e.g. name@example.com).');
+      setError('Please enter a valid, authentic email address (e.g. name@example.com).');
       return;
     }
 
@@ -78,10 +130,10 @@ function LoginFormContent() {
     if (!result.success) {
       setError(result.error || 'Failed to sign in.');
     } else {
-      setSuccess('Successfully authenticated! Redirecting to your dashboard...');
+      setSuccess('Successfully authenticated! Redirecting...');
       setTimeout(() => {
         router.push(redirectPath);
-      }, 700);
+      }, 600);
     }
   };
 
@@ -96,7 +148,7 @@ function LoginFormContent() {
     }
 
     if (!isValidEmail(regEmail)) {
-      setError('Please enter a valid, original email address (e.g. name@example.com).');
+      setError('Please enter a valid, authentic email address (e.g. name@example.com).');
       return;
     }
 
@@ -112,7 +164,7 @@ function LoginFormContent() {
       setSuccess('Account created successfully! Welcome to Sarang Living.');
       setTimeout(() => {
         router.push(redirectPath);
-      }, 700);
+      }, 600);
     }
   };
 
@@ -139,34 +191,30 @@ function LoginFormContent() {
 
   return (
     <div className="auth-page-container">
-      {/* Decorative ambient background glows */}
-      <div className="auth-ambient-glow glow-1" />
-      <div className="auth-ambient-glow glow-2" />
-
       <div className="auth-card-wrapper">
         <motion.div
-          initial={{ opacity: 0, y: 25, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
           className="auth-card"
         >
           {/* Header */}
           <div className="auth-header">
             <div className="auth-badge-pill">
               <ShieldCheck size={13} className="text-teal" />
-              <span>SUPABASE SECURE AUTHENTICATION</span>
+              <span>SARANG LIVING MEMBER AUTH</span>
             </div>
 
             <h1 className="auth-title">
               {tab === 'login' && 'Welcome Back'}
-              {tab === 'register' && 'Join Sarang Living'}
+              {tab === 'register' && 'Create Account'}
               {tab === 'forgot' && 'Reset Password'}
             </h1>
-            
+
             <p className="auth-subtitle">
-              {tab === 'login' && 'Sign in with your email to view your orders, saved addresses, and wishlist.'}
-              {tab === 'register' && 'Create your account to enjoy fast checkout and curated member perks.'}
-              {tab === 'forgot' && 'Enter your email address and we will send you a password reset link.'}
+              {tab === 'login' && 'Sign in to access your orders, addresses, and wishlist.'}
+              {tab === 'register' && 'Join Sarang Living for fast checkout and exclusive perks.'}
+              {tab === 'forgot' && 'Enter your email to receive a password reset link.'}
             </p>
 
             {/* Navigation Tabs */}
@@ -237,7 +285,7 @@ function LoginFormContent() {
                   <label htmlFor="login-email">Email Address</label>
                   {isEmailValid && (
                     <span className="auth-valid-tag">
-                      <CheckCircle2 size={12} /> Valid Email Format
+                      <CheckCircle2 size={12} /> Valid Format
                     </span>
                   )}
                 </div>
@@ -254,7 +302,7 @@ function LoginFormContent() {
                   />
                 </div>
                 {isEmailInvalid && (
-                  <span className="auth-field-error">Please enter a complete email address (e.g., user@example.com)</span>
+                  <span className="auth-field-error">Please enter a valid email address (e.g., user@example.com)</span>
                 )}
               </div>
 
@@ -308,6 +356,15 @@ function LoginFormContent() {
                   </>
                 )}
               </button>
+
+              {/* Quick 1-Click Demo Login */}
+              <button
+                type="button"
+                onClick={handleDemoSignIn}
+                className="auth-demo-btn"
+              >
+                <Zap size={16} /> 1-Click Quick Demo Sign-In
+              </button>
             </form>
           )}
 
@@ -332,10 +389,10 @@ function LoginFormContent() {
 
               <div className="auth-input-group">
                 <div className="auth-label-row">
-                  <label htmlFor="reg-email">Original Email Address</label>
+                  <label htmlFor="reg-email">Email Address</label>
                   {isEmailValid && (
                     <span className="auth-valid-tag">
-                      <CheckCircle2 size={12} /> Valid Email Format
+                      <CheckCircle2 size={12} /> Valid Format
                     </span>
                   )}
                 </div>
@@ -351,13 +408,10 @@ function LoginFormContent() {
                     required
                   />
                 </div>
-                {isEmailInvalid && (
-                  <span className="auth-field-error">Please enter an authentic email address (e.g., user@example.com)</span>
-                )}
               </div>
 
               <div className="auth-input-group">
-                <label htmlFor="reg-password">Password (Minimum 6 characters)</label>
+                <label htmlFor="reg-password">Password (Min. 6 chars)</label>
                 <div className="auth-input-wrapper">
                   <Lock size={18} className="auth-input-icon" />
                   <input
@@ -373,7 +427,6 @@ function LoginFormContent() {
                     type="button"
                     className="auth-toggle-pwd"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -392,6 +445,14 @@ function LoginFormContent() {
                     Create Account <Sparkles size={18} />
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDemoSignIn}
+                className="auth-demo-btn"
+              >
+                <Zap size={16} /> 1-Click Quick Demo Sign-In
               </button>
             </form>
           )}
@@ -420,7 +481,7 @@ function LoginFormContent() {
                 className="auth-submit-btn"
               >
                 {forgotLoading ? (
-                  <span className="auth-spinner">Sending Reset Link...</span>
+                  <span className="auth-spinner">Sending...</span>
                 ) : (
                   <>
                     Send Reset Link <KeyRound size={18} />
@@ -441,10 +502,6 @@ function LoginFormContent() {
               </button>
             </form>
           )}
-
-          <div className="auth-footer-note">
-            Protected by <strong>Supabase Row Level Security</strong>. Your data is encrypted and safe.
-          </div>
         </motion.div>
       </div>
     </div>

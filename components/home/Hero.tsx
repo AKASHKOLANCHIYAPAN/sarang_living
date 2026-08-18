@@ -108,7 +108,7 @@ export default function Hero() {
             </div>
             <div className="hero-stat-divider" />
             <div className="hero-stat">
-              <span className="hero-stat-number">₹10</span>
+              <span className="hero-stat-number">$10</span>
               <span className="hero-stat-label">Starting</span>
             </div>
           </motion.div>

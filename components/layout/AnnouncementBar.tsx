@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const announcements = [
-  { icon: Truck, text: 'Free Shipping on orders above ₹999' },
-  { icon: RotateCcw, text: 'Easy 7-day returns' },
-  { icon: MapPin, text: 'Pan-India delivery' },
+  { icon: Truck, text: '✨ Free Express Shipping on orders above $99 — Code: UNISEOUL ✨' },
+  { icon: MapPin, text: 'Authentic Korean Hair Accessories & Lifestyle Essentials' },
+  { icon: RotateCcw, text: 'Easy 7-Day Returns & Worldwide Dispatch' },
 ];
 
 export default function AnnouncementBar() {

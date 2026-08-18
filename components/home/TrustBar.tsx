@@ -6,23 +6,23 @@ import { Truck, RotateCcw, Shield, Heart } from 'lucide-react';
 const trustItems = [
   {
     icon: Truck,
-    title: 'Free Shipping',
-    description: 'On all orders above ₹999',
+    title: 'Free Express Shipping',
+    description: 'On all orders above $99',
   },
   {
     icon: RotateCcw,
-    title: 'Easy Returns',
-    description: '7-day hassle-free returns',
+    title: '7-Day Easy Returns',
+    description: 'Hassle-free returns & exchanges',
   },
   {
     icon: Shield,
-    title: 'Secure Payment',
-    description: 'UPI, cards & more via Razorpay',
+    title: 'Secure Checkout',
+    description: '256-bit SSL encrypted payment',
   },
   {
     icon: Heart,
-    title: 'Curated with Love',
-    description: 'Handpicked Korean-minimalist pieces',
+    title: 'Korean Aesthetics',
+    description: 'Handpicked minimalist pieces',
   },
 ];
 
