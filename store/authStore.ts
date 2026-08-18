@@ -151,18 +151,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: false, error: 'Please enter a valid 10-digit mobile phone number.' };
     }
 
-    try {
-      const fullPhone = cleanPhone.length === 10 ? `+91${cleanPhone}` : `+${cleanPhone}`;
-      await supabase.auth.signInWithOtp({ phone: fullPhone });
-    } catch {
-      // Fallback
-    }
+    const fullPhone = cleanPhone.length === 10 ? `+91${cleanPhone}` : `+${cleanPhone}`;
 
-    set({ isLoading: false });
-    return {
-      success: true,
-      message: `OTP sent to +91 ${cleanPhone.slice(0, 5)} ${cleanPhone.slice(5)}. (Use Demo OTP: 123456)`,
-    };
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: fullPhone,
+      });
+
+      if (error) {
+        set({ isLoading: false });
+        let errMsg = error.message;
+        if (errMsg.includes('sms_provider_not_configured') || errMsg.includes('provider')) {
+          errMsg = 'SMS Provider configuration required in Supabase dashboard. Please configure Twilio or Fast2SMS gateway.';
+        }
+        return { success: false, error: errMsg };
+      }
+
+      set({ isLoading: false });
+      return {
+        success: true,
+        message: `Real SMS OTP dispatched to ${fullPhone}. Please enter the 6-digit code received on your phone.`,
+      };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return {
+        success: false,
+        error: err.message || 'Failed to dispatch real SMS OTP to your phone.',
+      };
+    }
   },
 
   verifyPhoneOtp: async (phone, otp, name) => {
@@ -172,47 +188,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!cleanOtp || cleanOtp.length !== 6) {
       set({ isLoading: false });
-      return { success: false, error: 'Please enter the 6-digit OTP code.' };
+      return { success: false, error: 'Please enter the 6-digit OTP code sent via SMS.' };
     }
 
     const fullPhone = cleanPhone.length === 10 ? `+91${cleanPhone}` : `+${cleanPhone}`;
-    let authenticatedUser: AuthUser | null = null;
 
     try {
-      const { data } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         phone: fullPhone,
         token: cleanOtp,
         type: 'sms',
       });
 
-      if (data?.user) {
-        authenticatedUser = {
-          id: data.user.id,
-          name: name || data.user.user_metadata?.full_name || `Member ${cleanPhone.slice(-4)}`,
-          phone: fullPhone,
-          createdAt: data.user.created_at,
-          orders: [],
-          addresses: [],
+      if (error || !data?.user) {
+        set({ isLoading: false });
+        return {
+          success: false,
+          error: error?.message || 'Invalid or expired SMS OTP code. Please request a new OTP.',
         };
       }
-    } catch {
-      // Fallback
-    }
 
-    if (!authenticatedUser) {
-      authenticatedUser = {
-        id: `phone_user_${cleanPhone}`,
-        name: name?.trim() || `Member (${cleanPhone.slice(-4)})`,
+      const user = data.user;
+      const authenticatedUser: AuthUser = {
+        id: user.id,
+        name: name?.trim() || user.user_metadata?.full_name || `Member ${cleanPhone.slice(-4)}`,
         phone: fullPhone,
-        createdAt: new Date().toISOString(),
+        createdAt: user.created_at,
         orders: [],
         addresses: [],
       };
-    }
 
-    saveSessionLocally(authenticatedUser);
-    set({ user: authenticatedUser, isAuthenticated: true, isInitialized: true, isLoading: false });
-    return { success: true };
+      saveSessionLocally(authenticatedUser);
+      set({ user: authenticatedUser, isAuthenticated: true, isInitialized: true, isLoading: false });
+      return { success: true };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return {
+        success: false,
+        error: err.message || 'Failed to verify SMS OTP.',
+      };
+    }
   },
 
   login: async (email, password) => {
