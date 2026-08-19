@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateOtp, storeOtp, sendOtpSms, isValidIndianPhone, formatPhone } from '@/lib/otp';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   return NextResponse.json({ status: 'ok', endpoint: 'send-otp' });

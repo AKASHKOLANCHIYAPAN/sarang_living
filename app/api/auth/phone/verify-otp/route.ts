@@ -4,7 +4,7 @@ import { verifyOtp, isValidIndianPhone, formatPhone } from '@/lib/otp';
 import { signToken, AUTH_COOKIE_NAME } from '@/lib/auth/jwt';
 import { supabase } from '@/lib/supabase';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   return NextResponse.json({ status: 'ok', endpoint: 'verify-otp' });

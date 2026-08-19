@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { UserRepository, toSafeUser } from '@/lib/auth/userRepository';
 import { verifyPassword, signToken, AUTH_COOKIE_NAME } from '@/lib/auth/jwt';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   return NextResponse.json({ message: 'Auth Login API endpoint' });
