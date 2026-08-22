@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product } from '@/lib/products';
+import type { Product } from '@/lib/products-db';
 
 export interface CartItem {
   product: Product;

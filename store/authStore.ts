@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 
 export interface AuthUser {
   id: string;
@@ -9,8 +9,6 @@ export interface AuthUser {
   avatarUrl?: string;
   role?: string;
   createdAt?: string;
-  orders?: any[];
-  addresses?: any[];
 }
 
 interface AuthState {
@@ -21,67 +19,74 @@ interface AuthState {
 
   // Actions
   checkAuth: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string; requiresEmailConfirmation?: boolean }>;
   sendPhoneOtp: (phone: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   verifyPhoneOtp: (phone: string, otp: string, name?: string) => Promise<{ success: boolean; error?: string }>;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  updateProfile: (data: { full_name?: string; phone?: string; avatar_url?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
 }
 
-const LOCAL_SESSION_KEY = 'sarang_living_auth_session';
-
-function saveSessionLocally(user: AuthUser | null) {
-  if (typeof window === 'undefined') return;
-  if (user) {
-    localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(LOCAL_SESSION_KEY);
-  }
-}
-
-function getLocalSession(): AuthUser | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const data = localStorage.getItem(LOCAL_SESSION_KEY);
-    return data ? JSON.parse(data) : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Strict RFC 5322 Compliant Email Validator
- * Verifies email structure, valid domain extension, and rejects malformed addresses.
  */
 export function isValidEmail(email: string): boolean {
   if (!email || typeof email !== 'string') return false;
   const cleanEmail = email.trim().toLowerCase();
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(cleanEmail)) return false;
-  
+
   const [localPart, domain] = cleanEmail.split('@');
   if (!localPart || !domain) return false;
   if (localPart.length > 64 || domain.length > 255) return false;
-  
+
   const domainParts = domain.split('.');
   const tld = domainParts[domainParts.length - 1];
   if (!tld || tld.length < 2) return false;
 
-  // Reject common dummy domain extensions
   if (['example', 'test', 'invalid', 'localhost'].includes(domainParts[0])) {
     return false;
   }
-  
+
   return true;
 }
 
-function getBasePath(): string {
-  if (typeof window !== 'undefined') {
-    return process.env.NEXT_PUBLIC_BASE_PATH || '';
+/**
+ * Format Indian phone numbers with country code +91
+ */
+export function formatPhoneWithCountryCode(phone: string): string {
+  const digits = phone.replace(/[^0-9]/g, '');
+  if (digits.length === 10) {
+    return `+91${digits}`;
   }
-  return '';
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `+${digits}`;
+  }
+  return digits ? `+${digits}` : '';
+}
+
+async function fetchUserProfile(userId: string): Promise<{ fullName?: string; role?: string; phone?: string; avatarUrl?: string }> {
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('full_name, role, phone, avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (!error && profile) {
+      return {
+        fullName: profile.full_name || undefined,
+        role: profile.role || 'customer',
+        phone: profile.phone || undefined,
+        avatarUrl: profile.avatar_url || undefined,
+      };
+    }
+  } catch (err) {
+    console.warn('Could not fetch user profile:', err);
+  }
+  return { role: 'customer' };
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -91,7 +96,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isInitialized: false,
 
   setUser: (user) => {
-    saveSessionLocally(user);
     set({ user, isAuthenticated: !!user });
   },
 
@@ -100,146 +104,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
 
     try {
-      // 1. Check live Supabase Auth session
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { user: authUser },
+        error,
+      } = await supabase.auth.getUser();
 
-      if (session?.user) {
-        const user = session.user;
-        let fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Member';
-        let role = 'customer';
-
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-          if (profile?.full_name) fullName = profile.full_name;
-          if (profile?.role) role = profile.role;
-        } catch {
-          // Fallback if profiles table is empty
-        }
-
-        const authUser: AuthUser = {
-          id: user.id,
-          name: fullName,
-          email: user.email || '',
-          avatarUrl: user.user_metadata?.avatar_url,
-          role,
-          createdAt: user.created_at,
-          orders: [],
-          addresses: [],
-        };
-
-        saveSessionLocally(authUser);
-        set({ user: authUser, isAuthenticated: true, isInitialized: true, isLoading: false });
+      if (error || !authUser) {
+        set({ user: null, isAuthenticated: false, isInitialized: true, isLoading: false });
         return;
       }
-    } catch (err) {
-      console.warn('Supabase auth session check warning:', err);
-    }
 
-    // 2. Check saved session fallback
-    const savedUser = getLocalSession();
-    if (savedUser) {
-      set({ user: savedUser, isAuthenticated: true, isInitialized: true, isLoading: false });
-    } else {
+      const profile = await fetchUserProfile(authUser.id);
+      const displayName =
+        profile.fullName ||
+        authUser.user_metadata?.full_name ||
+        authUser.email?.split('@')[0] ||
+        (authUser.phone ? `Member ${authUser.phone.slice(-4)}` : 'Valued Member');
+
+      const user: AuthUser = {
+        id: authUser.id,
+        name: displayName,
+        email: authUser.email || undefined,
+        phone: profile.phone || authUser.phone || undefined,
+        avatarUrl: profile.avatarUrl || authUser.user_metadata?.avatar_url,
+        role: profile.role || 'customer',
+        createdAt: authUser.created_at,
+      };
+
+      set({ user, isAuthenticated: true, isInitialized: true, isLoading: false });
+    } catch (err) {
+      console.error('Session check error:', err);
       set({ user: null, isAuthenticated: false, isInitialized: true, isLoading: false });
     }
   },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Phone OTP — Uses real server-side API endpoints
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  sendPhoneOtp: async (phone) => {
-    set({ isLoading: true });
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-
-    if (!cleanPhone || cleanPhone.length < 10) {
-      set({ isLoading: false });
-      return { success: false, error: 'Please enter a valid 10-digit mobile number.' };
-    }
-
-    try {
-      const basePath = getBasePath();
-      const res = await fetch(`${basePath}/api/auth/phone/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: cleanPhone }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        set({ isLoading: false });
-        return { success: false, error: data.error || 'Failed to send verification code.' };
-      }
-
-      set({ isLoading: false });
-      return {
-        success: true,
-        message: data.message || 'Verification code sent to your mobile number.',
-      };
-    } catch (err: any) {
-      set({ isLoading: false });
-      return {
-        success: false,
-        error: err.message || 'Network error. Please check your connection.',
-      };
-    }
-  },
-
-  verifyPhoneOtp: async (phone, otp, name) => {
-    set({ isLoading: true });
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const cleanOtp = otp.trim();
-
-    if (!cleanOtp || cleanOtp.length !== 6) {
-      set({ isLoading: false });
-      return { success: false, error: 'Please enter the 6-digit verification code.' };
-    }
-
-    try {
-      const basePath = getBasePath();
-      const res = await fetch(`${basePath}/api/auth/phone/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: cleanPhone, otp: cleanOtp, name: name?.trim() }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        set({ isLoading: false });
-        return { success: false, error: data.error || 'Verification failed. Please try again.' };
-      }
-
-      const authenticatedUser: AuthUser = {
-        id: data.user.id,
-        name: data.user.name,
-        phone: data.user.phone,
-        createdAt: data.user.createdAt,
-        orders: [],
-        addresses: [],
-      };
-
-      saveSessionLocally(authenticatedUser);
-      set({ user: authenticatedUser, isAuthenticated: true, isInitialized: true, isLoading: false });
-      return { success: true };
-    } catch (err: any) {
-      set({ isLoading: false });
-      return {
-        success: false,
-        error: err.message || 'Network error during verification.',
-      };
-    }
-  },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Email/Password Auth (existing Supabase flow)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   login: async (email, password) => {
     set({ isLoading: true });
@@ -249,7 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
       return {
         success: false,
-        error: 'Please enter a valid email address with an authentic domain (e.g. name@gmail.com).',
+        error: 'Please enter a valid email address (e.g. name@gmail.com).',
       };
     }
 
@@ -269,48 +166,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         let errorMessage = error.message;
 
         if (error.message.includes('Invalid login credentials') || error.code === 'invalid_credentials') {
-          errorMessage = 'Invalid email address or password. If you haven\'t created an account yet, please click "Register" above to sign up first!';
-        } else if (error.message.includes('email_address_invalid') || error.message.includes('invalid')) {
-          errorMessage = 'Please enter an authentic email address (e.g. name@gmail.com, yahoo.com, or outlook.com).';
+          errorMessage = 'Invalid email address or password. Please check your credentials or register first.';
         } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'Please confirm your email address via the link sent to your inbox.';
-        } else if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
-          errorMessage = 'Network connection to authentication server failed. Please check your internet connection.';
+          errorMessage = 'Please verify your email address. Check your inbox for the confirmation link.';
         }
 
         return { success: false, error: errorMessage };
       }
 
       if (data?.user) {
-        const user = data.user;
-        const authUser: AuthUser = {
-          id: user.id,
-          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Member',
-          email: user.email || normalizedEmail,
-          createdAt: user.created_at,
-          orders: [],
-          addresses: [],
+        const authUser = data.user;
+        const profile = await fetchUserProfile(authUser.id);
+        const displayName =
+          profile.fullName ||
+          authUser.user_metadata?.full_name ||
+          authUser.email?.split('@')[0] ||
+          'Valued Member';
+
+        const user: AuthUser = {
+          id: authUser.id,
+          name: displayName,
+          email: authUser.email || normalizedEmail,
+          phone: profile.phone || authUser.phone || undefined,
+          avatarUrl: profile.avatarUrl || authUser.user_metadata?.avatar_url,
+          role: profile.role || 'customer',
+          createdAt: authUser.created_at,
         };
 
-        saveSessionLocally(authUser);
-        set({ user: authUser, isAuthenticated: true, isInitialized: true, isLoading: false });
+        set({ user, isAuthenticated: true, isInitialized: true, isLoading: false });
         return { success: true };
       }
+
+      set({ isLoading: false });
+      return { success: false, error: 'Login failed. Please try again.' };
     } catch (err: any) {
-      console.error('Supabase login exception:', err);
+      set({ isLoading: false });
+      return { success: false, error: err.message || 'An unexpected error occurred during sign in.' };
     }
-
-    const savedUser = getLocalSession();
-    if (savedUser && savedUser.email?.toLowerCase() === normalizedEmail) {
-      set({ user: savedUser, isAuthenticated: true, isInitialized: true, isLoading: false });
-      return { success: true };
-    }
-
-    set({ isLoading: false });
-    return {
-      success: false,
-      error: 'Account not found. Please click "Register" above to create your new Sarang Living account.',
-    };
   },
 
   register: async (name, email, password) => {
@@ -327,7 +219,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
       return {
         success: false,
-        error: 'Please enter a valid, authentic email address (e.g. name@gmail.com, yahoo.com, outlook.com).',
+        error: 'Please enter a valid email address (e.g. name@gmail.com).',
       };
     }
 
@@ -352,64 +244,148 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         let errorMessage = error.message;
 
         if (error.message.includes('User already registered') || error.code === 'user_already_exists') {
-          errorMessage = 'An account with this email address already exists. Please click "Sign In" to log in.';
-        } else if (error.message.includes('invalid') || error.code === 'email_address_invalid') {
-          errorMessage = 'Please enter an authentic email address (e.g. name@gmail.com, yahoo.com, or outlook.com). Fake domains are rejected by security.';
-        } else if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'Network error connecting to auth server. Please check your internet connection.';
+          errorMessage = 'An account with this email address already exists. Please sign in instead.';
         }
 
         return { success: false, error: errorMessage };
       }
 
       if (data?.user) {
-        const user = data.user;
+        const authUser = data.user;
 
+        // Upsert profile in public.profiles (guaranteed auth.users UUID)
         try {
           await supabase.from('profiles').upsert({
-            id: user.id,
+            id: authUser.id,
             full_name: cleanName,
           });
         } catch {
-          // DB trigger backup
+          // Trigger backup
         }
 
-        const authUser: AuthUser = {
-          id: user.id,
+        // If email confirmation is required, session might be null initially
+        if (!data.session) {
+          set({ isLoading: false });
+          return {
+            success: true,
+            requiresEmailConfirmation: true,
+          };
+        }
+
+        const user: AuthUser = {
+          id: authUser.id,
           name: cleanName,
-          email: user.email || normalizedEmail,
-          createdAt: user.created_at || new Date().toISOString(),
-          orders: [],
-          addresses: [],
+          email: authUser.email || normalizedEmail,
+          role: 'customer',
+          createdAt: authUser.created_at || new Date().toISOString(),
         };
 
-        saveSessionLocally(authUser);
-        set({ user: authUser, isAuthenticated: true, isInitialized: true, isLoading: false });
+        set({ user, isAuthenticated: true, isInitialized: true, isLoading: false });
         return { success: true };
       }
+
+      set({ isLoading: false });
+      return { success: false, error: 'Registration could not be completed.' };
     } catch (err: any) {
-      console.error('Supabase registration error:', err);
+      set({ isLoading: false });
+      return { success: false, error: err.message || 'An unexpected error occurred during registration.' };
+    }
+  },
+
+  sendPhoneOtp: async (phone) => {
+    set({ isLoading: true });
+    const formattedPhone = formatPhoneWithCountryCode(phone);
+
+    if (!formattedPhone || formattedPhone.length < 12) {
+      set({ isLoading: false });
+      return { success: false, error: 'Please enter a valid 10-digit mobile number.' };
     }
 
-    const fallbackUser: AuthUser = {
-      id: `user_${Date.now()}`,
-      name: cleanName,
-      email: normalizedEmail,
-      createdAt: new Date().toISOString(),
-      orders: [],
-      addresses: [],
-    };
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
 
-    saveSessionLocally(fallbackUser);
-    set({ user: fallbackUser, isAuthenticated: true, isInitialized: true, isLoading: false });
-    return { success: true };
+      if (error) {
+        set({ isLoading: false });
+        // Helpful diagnostic message if SMS provider is not enabled in Supabase Dashboard
+        if (error.message.includes('sms_send_failed') || error.message.includes('SMS provider') || error.message.includes('not configured')) {
+          return {
+            success: false,
+            error: 'Phone SMS verification requires an SMS provider configured in Supabase Dashboard. You can also sign in with Email & Password.',
+          };
+        }
+        return { success: false, error: error.message };
+      }
+
+      set({ isLoading: false });
+      return {
+        success: true,
+        message: `Verification code sent to ${formattedPhone}`,
+      };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, error: err.message || 'Failed to send OTP.' };
+    }
+  },
+
+  verifyPhoneOtp: async (phone, otp, name) => {
+    set({ isLoading: true });
+    const formattedPhone = formatPhoneWithCountryCode(phone);
+    const cleanOtp = otp.trim();
+
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      set({ isLoading: false });
+      return { success: false, error: 'Please enter the 6-digit verification code.' };
+    }
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: formattedPhone,
+        token: cleanOtp,
+        type: 'sms',
+      });
+
+      if (error || !data.user) {
+        set({ isLoading: false });
+        return { success: false, error: error?.message || 'Invalid or expired OTP code.' };
+      }
+
+      const authUser = data.user;
+      const cleanName = name?.trim() || authUser.user_metadata?.full_name || `Member ${formattedPhone.slice(-4)}`;
+
+      // Update profile in Supabase
+      try {
+        await supabase.from('profiles').upsert({
+          id: authUser.id,
+          full_name: cleanName,
+          phone: formattedPhone,
+        });
+      } catch {
+        // Handled
+      }
+
+      const user: AuthUser = {
+        id: authUser.id,
+        name: cleanName,
+        phone: formattedPhone,
+        role: 'customer',
+        createdAt: authUser.created_at,
+      };
+
+      set({ user, isAuthenticated: true, isInitialized: true, isLoading: false });
+      return { success: true };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, error: err.message || 'Verification failed.' };
+    }
   },
 
   resetPassword: async (email) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!isValidEmail(normalizedEmail)) {
-      return { success: false, error: 'Please enter a valid, original email address.' };
+      return { success: false, error: 'Please enter a valid email address.' };
     }
 
     try {
@@ -430,6 +406,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  updateProfile: async (data) => {
+    const currentUser = get().user;
+    if (!currentUser) {
+      return { success: false, error: 'You must be logged in to update your profile.' };
+    }
+
+    try {
+      const updates: { full_name?: string; phone?: string; avatar_url?: string } = {};
+      if (data.full_name !== undefined) updates.full_name = data.full_name.trim();
+      if (data.phone !== undefined) updates.phone = data.phone.trim();
+      if (data.avatar_url !== undefined) updates.avatar_url = data.avatar_url;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', currentUser.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      set({
+        user: {
+          ...currentUser,
+          name: updates.full_name ?? currentUser.name,
+          phone: updates.phone ?? currentUser.phone,
+          avatarUrl: updates.avatar_url ?? currentUser.avatarUrl,
+        },
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to update profile.' };
+    }
+  },
+
   logout: async () => {
     set({ isLoading: true });
     try {
@@ -437,7 +449,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err) {
       console.warn('Supabase logout error:', err);
     } finally {
-      saveSessionLocally(null);
       set({
         user: null,
         isAuthenticated: false,

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Heart, Share2, ChevronRight, Check, Truck } from 'lucide-react';
-import { getProductBySlug, getRelatedProducts } from '@/lib/products';
+import { getProductBySlug, getRelatedProducts, Product } from '@/lib/products-db';
 import { formatPrice, getCategoryGradient, getAssetPath } from '@/lib/utils';
 import { useCartStore } from '@/store/cartStore';
 import QuantitySelector from '@/components/ui/QuantitySelector';
@@ -17,17 +17,56 @@ interface ProductDetailClientProps {
 }
 
 export default function ProductDetailClient({ slug }: ProductDetailClientProps) {
-  const product = getProductBySlug(slug);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNotFound, setIsNotFound] = useState(false);
+
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
 
-  if (!product) {
+  useEffect(() => {
+    async function loadProduct() {
+      setIsLoading(true);
+      try {
+        const prod = await getProductBySlug(slug);
+        if (!prod || !prod.isActive) {
+          setIsNotFound(true);
+          return;
+        }
+        setProduct(prod);
+
+        const related = await getRelatedProducts(prod, 4);
+        setRelatedProducts(related);
+      } catch (err) {
+        console.error('Error fetching product detail:', err);
+        setIsNotFound(true);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProduct();
+  }, [slug]);
+
+  if (isNotFound) {
     notFound();
   }
 
-  const relatedProducts = getRelatedProducts(product, 4);
+  if (isLoading || !product) {
+    return (
+      <div className="pdp-page">
+        <div className="container-sarang">
+          <div style={{ padding: '60px 0', textAlign: 'center', color: '#6B7280' }}>
+            <div className="login-spinner" style={{ margin: '0 auto 16px' }} />
+            <p>Loading product details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleAddToCart = () => {
     addItem(product, quantity);
@@ -37,6 +76,11 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
       openCart();
     }, 800);
   };
+
+  const categorySlug = product.category
+    .toLowerCase()
+    .replace(/ & /g, '-')
+    .replace(/ /g, '-');
 
   return (
     <div className="pdp-page">
@@ -48,7 +92,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
           <Link href="/products" className="breadcrumb-link">Products</Link>
           <ChevronRight size={14} />
           <Link
-            href={`/products?category=${product.category.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`}
+            href={`/products?category=${categorySlug}`}
             className="breadcrumb-link"
           >
             {product.category}
@@ -88,7 +132,7 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
               )}
             </div>
 
-            {/* Thumbnail strip (for future multi-image support) */}
+            {/* Thumbnail strip (for multi-image support) */}
             {product.images.length > 1 && (
               <div className="pdp-thumbnails">
                 {product.images.map((img, i) => (
@@ -108,97 +152,75 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
             className="pdp-info"
           >
             {/* Category & SKU */}
-            <div className="pdp-meta">
+            <div className="pdp-meta-top">
               <span className="pdp-category">{product.category}</span>
-              <span className="pdp-sku">{product.sku}</span>
+              <span className="pdp-sku">SKU: {product.sku}</span>
             </div>
 
-            {/* Name */}
-            <h1 className="pdp-name">{product.name}</h1>
+            {/* Title */}
+            <h1 className="pdp-title">{product.name}</h1>
 
             {/* Price */}
-            <div className="pdp-price-block">
+            <div className="pdp-price-wrap">
               <span className="pdp-price">{formatPrice(product.price)}</span>
               {product.compareAtPrice && product.compareAtPrice > product.price && (
-                <>
-                  <span className="pdp-compare-price">{formatPrice(product.compareAtPrice)}</span>
-                  <span className="pdp-discount">
-                    {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}% off
-                  </span>
-                </>
+                <span className="pdp-compare-price">{formatPrice(product.compareAtPrice)}</span>
               )}
             </div>
-
-            {/* Divider */}
-            <div className="pdp-divider" />
 
             {/* Description */}
             <p className="pdp-description">{product.description}</p>
 
-            {/* Stock Status */}
-            <div className="pdp-stock">
-              {product.stockQuantity > 0 ? (
-                <span className="pdp-stock-in">
-                  <Check size={14} />
-                  In Stock
-                  {product.stockQuantity <= 5 && (
-                    <span className="pdp-stock-low"> — Only {product.stockQuantity} left!</span>
-                  )}
-                </span>
-              ) : (
-                <span className="pdp-stock-out">Out of Stock</span>
-              )}
-            </div>
+            <div className="gold-divider" style={{ margin: 'var(--space-6) 0' }} />
 
             {/* Quantity & Add to Cart */}
             <div className="pdp-actions">
-              <QuantitySelector
-                quantity={quantity}
-                onChange={setQuantity}
-                max={product.stockQuantity}
-              />
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleAddToCart}
-                disabled={product.stockQuantity === 0}
-                className="pdp-add-btn"
-              >
-                {isAdded ? (
-                  <>
-                    <Check size={18} />
-                    Added!
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag size={18} />
-                    Add to Cart — {formatPrice(product.price * quantity)}
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Secondary Actions */}
-            <div className="pdp-secondary-actions">
-              <button className="pdp-wishlist-btn" type="button">
-                <Heart size={16} />
-                Add to Wishlist
-              </button>
-              <button className="pdp-share-btn" type="button">
-                <Share2 size={16} />
-                Share
-              </button>
-            </div>
-
-            {/* Trust Signals */}
-            <div className="pdp-trust">
-              <div className="pdp-trust-item">
-                <Truck size={16} />
-                <span>Free shipping above ₹999</span>
+              <div className="pdp-qty-wrap">
+                <span className="pdp-qty-label">Quantity</span>
+                <QuantitySelector
+                  quantity={quantity}
+                  onChange={setQuantity}
+                  max={product.stockQuantity}
+                />
               </div>
-              <div className="pdp-trust-item">
-                <Check size={16} />
-                <span>7-day easy returns</span>
+
+              <div className="pdp-buttons">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleAddToCart}
+                  className="pdp-add-btn"
+                >
+                  {isAdded ? (
+                    <>
+                      <Check size={18} />
+                      Added to Cart!
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag size={18} />
+                      Add to Cart — {formatPrice(product.price * quantity)}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Shipping & Returns info */}
+            <div className="pdp-perks">
+              <div className="pdp-perk">
+                <Truck size={18} className="pdp-perk-icon" />
+                <div>
+                  <strong>Pan-India Shipping</strong>
+                  <span>Free shipping on orders above ₹499</span>
+                </div>
+              </div>
+              <div className="pdp-perk">
+                <Heart size={18} className="pdp-perk-icon" />
+                <div>
+                  <strong>Quality Guaranteed</strong>
+                  <span>Handcrafted with premium materials</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -206,16 +228,16 @@ export default function ProductDetailClient({ slug }: ProductDetailClientProps) 
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <section className="pdp-related section-spacing" aria-labelledby="related-heading">
+          <section className="pdp-related section-spacing">
             <div className="section-header">
-              <h2 id="related-heading" className="section-title">
-                You May Also Like
-              </h2>
+              <h2 className="section-title">You May Also Love</h2>
               <div className="gold-divider" />
+              <p className="section-subtitle">More from {product.category}</p>
             </div>
+
             <div className="product-grid">
-              {relatedProducts.map((p, i) => (
-                <ProductCard key={p.sku} product={p} index={i} />
+              {relatedProducts.map((p, index) => (
+                <ProductCard key={p.sku} product={p} index={index} />
               ))}
             </div>
           </section>

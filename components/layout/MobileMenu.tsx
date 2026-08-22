@@ -1,9 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { X, ChevronRight, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { categories } from '@/lib/products';
+import { getCategories, Category } from '@/lib/products-db';
 import { getAssetPath } from '@/lib/utils';
 
 interface MobileMenuProps {
@@ -18,6 +19,20 @@ const menuLinks = [
 ];
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const cats = await getCategories();
+        setCategoriesList(cats);
+      } catch (err) {
+        console.error('Error loading mobile menu categories:', err);
+      }
+    }
+    loadCategories();
+  }, []);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -78,7 +93,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             {/* Category Links */}
             <div className="mobile-menu-section">
               <span className="mobile-menu-section-title">Categories</span>
-              {categories.map((cat, i) => (
+              {categoriesList.map((cat, i) => (
                 <motion.div
                   key={cat.slug}
                   initial={{ opacity: 0, x: -20 }}
@@ -104,7 +119,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 onClick={onClose}
                 className="mobile-menu-account-btn"
               >
-                Account Profile & Orders
+                Account Profile &amp; Orders
               </Link>
               <p className="mobile-menu-tagline">
                 <Heart size={12} fill="var(--color-accent-blush)" stroke="var(--color-accent-blush)" />

@@ -1,11 +1,26 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Heart, Mail, MapPin, Phone } from 'lucide-react';
-import { categories } from '@/lib/products';
+import { getCategories, Category } from '@/lib/products-db';
 import { getAssetPath } from '@/lib/utils';
 
 export default function Footer() {
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const cats = await getCategories();
+        setCategoriesList(cats);
+      } catch (err) {
+        console.error('Error loading footer categories:', err);
+      }
+    }
+    loadCategories();
+  }, []);
+
   return (
     <footer className="footer" role="contentinfo">
       {/* Gold Divider */}
@@ -56,7 +71,7 @@ export default function Footer() {
               <li><Link href="/products">All Products</Link></li>
               <li><Link href="/products?sort=newest">New Arrivals</Link></li>
               <li><Link href="/products?sort=bestsellers">Bestsellers</Link></li>
-              {categories.slice(0, 5).map((cat) => (
+              {categoriesList.slice(0, 5).map((cat) => (
                 <li key={cat.slug}>
                   <Link href={`/products?category=${cat.slug}`}>{cat.name}</Link>
                 </li>
@@ -68,8 +83,8 @@ export default function Footer() {
           <div className="footer-column">
             <h3 className="footer-column-title">Help</h3>
             <ul className="footer-links">
-              <li><Link href="/shipping">Shipping & Delivery</Link></li>
-              <li><Link href="/returns">Returns & Exchanges</Link></li>
+              <li><Link href="/shipping">Shipping &amp; Delivery</Link></li>
+              <li><Link href="/returns">Returns &amp; Exchanges</Link></li>
               <li><Link href="/faq">FAQ</Link></li>
               <li><Link href="/contact">Contact Us</Link></li>
               <li><Link href="/track-order">Track Your Order</Link></li>

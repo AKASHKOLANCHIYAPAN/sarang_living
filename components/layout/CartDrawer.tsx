@@ -168,9 +168,11 @@ export default function CartDrawer() {
                   <span className="cart-subtotal-amount">{formatPrice(subtotal())}</span>
                 </div>
                 <p className="cart-tax-note">Shipping & taxes calculated at checkout</p>
-                <Button variant="primary" fullWidth className="cart-checkout-btn">
-                  Proceed to Checkout
-                </Button>
+                <Link href="/checkout" onClick={closeCart} style={{ width: '100%' }}>
+                  <Button variant="primary" fullWidth className="cart-checkout-btn">
+                    Proceed to Checkout
+                  </Button>
+                </Link>
                 <button onClick={closeCart} className="cart-continue-btn" type="button">
                   Continue Shopping
                 </button>

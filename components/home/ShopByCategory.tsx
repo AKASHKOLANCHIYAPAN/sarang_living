@@ -1,18 +1,50 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { categories, getProductsByCategorySlug } from '@/lib/products';
+import { getCategories, getProducts, Category, Product } from '@/lib/products-db';
 import { getCategoryGradient, getAssetPath } from '@/lib/utils';
 
-// Show the top categories with highest product counts
-const featuredCategories = categories
-  .filter((c) => c.parentCategory === 'Hair Accessories')
-  .sort((a, b) => b.productCount - a.productCount)
-  .slice(0, 6);
-
 export default function ShopByCategory() {
+  const [featuredCategories, setFeaturedCategories] = useState<{ category: Category; featuredImg?: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const [allCategories, allProducts] = await Promise.all([
+          getCategories(),
+          getProducts({ onlyActive: true }),
+        ]);
+
+        const topCategories = allCategories
+          .filter((c) => c.parentCategory === 'Hair Accessories')
+          .sort((a, b) => b.productCount - a.productCount)
+          .slice(0, 6);
+
+        const categoriesWithImages = topCategories.map((category) => {
+          const catProduct = allProducts.find(
+            (p) => p.category.toLowerCase() === category.name.toLowerCase() && p.images.length > 0
+          );
+          return {
+            category,
+            featuredImg: catProduct?.images[0],
+          };
+        });
+
+        setFeaturedCategories(categoriesWithImages);
+      } catch (err) {
+        console.error('Error loading categories:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadCategories();
+  }, []);
+
   return (
     <section className="section-spacing" aria-labelledby="shop-by-category-heading">
       <div className="container-sarang">
@@ -36,10 +68,7 @@ export default function ShopByCategory() {
 
         {/* Category Grid */}
         <div className="category-grid">
-          {featuredCategories.map((category, index) => {
-            const catProducts = getProductsByCategorySlug(category.slug);
-            const featuredImg = catProducts.find((p) => p.images.length > 0)?.images[0];
-
+          {featuredCategories.map(({ category, featuredImg }, index) => {
             return (
               <motion.div
                 key={category.slug}

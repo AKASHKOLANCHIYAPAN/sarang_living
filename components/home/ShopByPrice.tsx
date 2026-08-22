@@ -1,18 +1,32 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { priceBuckets } from '@/lib/utils';
-import { products } from '@/lib/products';
-
-// Count products per bucket
-function getCountForBucket(min: number, max: number): number {
-  return products.filter((p) => p.price >= min && p.price <= max && p.isActive).length;
-}
+import { getProducts, Product } from '@/lib/products-db';
 
 const bucketEmojis = ['✨', '💫', '🌸', '💎', '👑'];
 
 export default function ShopByPrice() {
+  const [productsList, setProductsList] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const prods = await getProducts({ onlyActive: true });
+        setProductsList(prods);
+      } catch (err) {
+        console.error('Error loading products for price buckets:', err);
+      }
+    }
+    loadProducts();
+  }, []);
+
+  function getCountForBucket(min: number, max: number): number {
+    return productsList.filter((p) => p.price >= min && p.price <= max && p.isActive).length;
+  }
+
   return (
     <section className="shop-by-price section-spacing" aria-labelledby="shop-by-price-heading">
       <div className="container-sarang">

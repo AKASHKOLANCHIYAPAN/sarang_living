@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import type { Product } from '@/lib/products';
+import type { Product } from '@/lib/products-db';
 import ProductCard from '@/components/ui/ProductCard';
 
 interface ProductRailProps {

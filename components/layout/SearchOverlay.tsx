@@ -4,8 +4,7 @@ import { Search, X } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { searchProducts } from '@/lib/products';
-import type { Product } from '@/lib/products';
+import { searchProducts, Product } from '@/lib/products-db';
 import { formatPrice, debounce, getAssetPath } from '@/lib/utils';
 import ProductPlaceholder from '@/components/ui/ProductPlaceholder';
 
@@ -17,6 +16,7 @@ interface SearchOverlayProps {
 export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,16 +26,27 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     if (!isOpen) {
       setQuery('');
       setResults([]);
+      setIsSearching(false);
     }
   }, [isOpen]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(
-    debounce((q: string) => {
+    debounce(async (q: string) => {
       if (q.length >= 2) {
-        setResults(searchProducts(q).slice(0, 8));
+        setIsSearching(true);
+        try {
+          const prods = await searchProducts(q, 8);
+          setResults(prods);
+        } catch (err) {
+          console.error('Search error:', err);
+          setResults([]);
+        } finally {
+          setIsSearching(false);
+        }
       } else {
         setResults([]);
+        setIsSearching(false);
       }
     }, 250),
     []
@@ -118,7 +129,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               )}
 
               {/* No Results */}
-              {query.length >= 2 && results.length === 0 && (
+              {query.length >= 2 && results.length === 0 && !isSearching && (
                 <div className="search-no-results">
                   <p>No products found for &ldquo;{query}&rdquo;</p>
                   <p className="search-no-results-hint">Try searching for &ldquo;claw clip&rdquo;, &ldquo;scrunchie&rdquo;, or &ldquo;bow&rdquo;</p>

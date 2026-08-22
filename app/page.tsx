@@ -4,11 +4,11 @@ import ShopByPrice from '@/components/home/ShopByPrice';
 import ProductRail from '@/components/home/ProductRail';
 import TrustBar from '@/components/home/TrustBar';
 import Newsletter from '@/components/home/Newsletter';
-import { getNewArrivals, getBestsellers } from '@/lib/products';
+import { getNewArrivals, getBestsellers } from '@/lib/products-db';
 
-export default function Home() {
-  const newArrivals = getNewArrivals(8);
-  const bestsellers = getBestsellers(8);
+export default async function Home() {
+  const newArrivals = await getNewArrivals(8);
+  const bestsellers = await getBestsellers(8);
 
   return (
     <>

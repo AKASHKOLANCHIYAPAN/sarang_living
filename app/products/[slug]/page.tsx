@@ -1,7 +1,8 @@
-import { products } from '@/lib/products';
+import { getProducts } from '@/lib/products-db';
 import ProductDetailClient from './ProductDetailClient';
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await getProducts({ onlyActive: true });
   return products.map((product) => ({
     slug: product.slug,
   }));
