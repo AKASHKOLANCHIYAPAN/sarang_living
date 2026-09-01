@@ -130,3 +130,57 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const admin = await getAuthenticatedAdmin();
+    if (!admin) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Category ID is required.' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+
+    // Check if any products reference this category
+    const { count, error: countErr } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('category_id', id);
+
+    if (countErr) {
+      return NextResponse.json({ success: false, error: countErr.message }, { status: 500 });
+    }
+
+    if (count && count > 0) {
+      return NextResponse.json({
+        success: false,
+        error: `Cannot delete category because ${count} product(s) are currently assigned to it. Reassign or delete those products first.`,
+      }, { status: 400 });
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id);
+
+    if (deleteErr) {
+      return NextResponse.json({ success: false, error: deleteErr.message }, { status: 500 });
+    }
+
+    try {
+      revalidatePath('/products');
+      revalidatePath('/');
+    } catch {}
+
+    return NextResponse.json({ success: true, message: 'Category deleted successfully.' });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+

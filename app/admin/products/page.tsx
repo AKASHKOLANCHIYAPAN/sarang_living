@@ -1,23 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package,
   Plus,
   Search,
-  SlidersHorizontal,
   Edit2,
   Trash2,
-  Check,
-  X,
-  AlertCircle,
   Eye,
   EyeOff,
-  Sparkles,
   Download,
   UploadCloud,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { formatPrice, getAssetPath } from '@/lib/utils';
 
@@ -25,6 +24,7 @@ interface CategoryOption {
   id: string;
   name: string;
   slug: string;
+  parent_category: string | null;
 }
 
 export default function AdminProductsPage() {
@@ -32,47 +32,35 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Filters & Search
   const [search, setSearch] = useState('');
-  const [selectedCat, setSelectedCat] = useState('');
+  const [selectedClassification, setSelectedClassification] = useState('all');
+  const [selectedCat, setSelectedCat] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedStock, setSelectedStock] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
 
-  // Add/Edit Modal
-  const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    sku: '',
-    name: '',
-    slug: '',
-    price: '',
-    compare_at_price: '',
-    category_id: '',
-    stock_quantity: '20',
-    description: '',
-    images: '/products/SL001.png',
-    is_active: true,
-  });
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [prodsRes, catsRes] = await Promise.all([
-        fetch(`/api/admin/products?search=${encodeURIComponent(search)}&categoryId=${selectedCat}&status=${selectedStatus}`),
+        fetch('/api/admin/products?search=&categoryId=&status=all'),
         fetch('/api/admin/categories'),
       ]);
 
       const prodsData = await prodsRes.json();
       const catsData = await catsRes.json();
 
-      if (prodsData.success) setProducts(prodsData.products);
-      if (catsData.success) {
-        setCategories(catsData.categories);
-        if (!formData.category_id && catsData.categories.length > 0) {
-          setFormData((prev) => ({ ...prev, category_id: catsData.categories[0].id }));
-        }
-      }
+      if (prodsData.success) setProducts(prodsData.products || []);
+      if (catsData.success) setCategories(catsData.categories || []);
     } catch (err) {
       console.error('Error loading products:', err);
     } finally {
@@ -82,93 +70,79 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, selectedCat, selectedStatus]);
+  }, []);
 
-  const openCreateModal = () => {
-    setModalMode('create');
-    setEditingId(null);
-    setFormError(null);
-    setFormData({
-      sku: `SL0${products.length + 1}`,
-      name: '',
-      slug: '',
-      price: '',
-      compare_at_price: '',
-      category_id: categories[0]?.id || '',
-      stock_quantity: '20',
-      description: '',
-      images: '/products/SL001.png',
-      is_active: true,
+  // Unique classifications from categories
+  const classifications = useMemo(() => {
+    const set = new Set<string>();
+    categories.forEach((c) => {
+      if (c.parent_category) set.add(c.parent_category);
     });
-  };
+    return Array.from(set).sort();
+  }, [categories]);
 
-  const openEditModal = (prod: any) => {
-    setModalMode('edit');
-    setEditingId(prod.id);
-    setFormError(null);
-    setFormData({
-      sku: prod.sku,
-      name: prod.name,
-      slug: prod.slug,
-      price: String(prod.price),
-      compare_at_price: prod.compare_at_price ? String(prod.compare_at_price) : '',
-      category_id: prod.category_id,
-      stock_quantity: String(prod.stock_quantity),
-      description: prod.description || '',
-      images: Array.isArray(prod.images) ? prod.images.join(', ') : prod.images || '/products/SL001.png',
-      is_active: prod.is_active,
-    });
-  };
+  // Categories filtered by selected classification
+  const filteredCategoryOptions = useMemo(() => {
+    if (selectedClassification === 'all') return categories;
+    return categories.filter((c) => c.parent_category === selectedClassification);
+  }, [categories, selectedClassification]);
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    setSaving(true);
-
-    try {
-      const payload: any = {
-        sku: formData.sku.trim(),
-        name: formData.name.trim(),
-        slug: formData.slug.trim(),
-        price: Number(formData.price),
-        compare_at_price: formData.compare_at_price ? Number(formData.compare_at_price) : null,
-        category_id: formData.category_id,
-        stock_quantity: Number(formData.stock_quantity),
-        description: formData.description.trim(),
-        images: formData.images.split(',').map((img) => img.trim()).filter(Boolean),
-        is_active: formData.is_active,
-      };
-
-      let res;
-      if (modalMode === 'create') {
-        res = await fetch('/api/admin/products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        payload.id = editingId;
-        res = await fetch('/api/admin/products', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+  // Filtered & sorted products
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      // Search
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const matchesName = p.name?.toLowerCase().includes(q);
+        const matchesSku = p.sku?.toLowerCase().includes(q);
+        const matchesSlug = p.slug?.toLowerCase().includes(q);
+        if (!matchesName && !matchesSku && !matchesSlug) return false;
       }
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setFormError(data.error || 'Failed to save product.');
-      } else {
-        setModalMode(null);
-        await loadData();
+      // Classification
+      if (selectedClassification !== 'all') {
+        const cat = categories.find((c) => c.id === p.category_id);
+        if (cat?.parent_category !== selectedClassification) return false;
       }
-    } catch (err: any) {
-      setFormError(err.message || 'Network error.');
-    } finally {
-      setSaving(false);
-    }
-  };
+
+      // Category
+      if (selectedCat !== 'all' && p.category_id !== selectedCat) {
+        return false;
+      }
+
+      // Visibility Status
+      if (selectedStatus === 'active' && !p.is_active) return false;
+      if (selectedStatus === 'inactive' && p.is_active) return false;
+
+      // Stock Status
+      if (selectedStock === 'in_stock' && p.stock_quantity <= 0) return false;
+      if (selectedStock === 'low_stock' && (p.stock_quantity <= 0 || p.stock_quantity >= 10)) return false;
+      if (selectedStock === 'out_of_stock' && p.stock_quantity > 0) return false;
+
+      return true;
+    }).sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      if (sortBy === 'oldest') return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+      if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
+      if (sortBy === 'name_desc') return b.name.localeCompare(a.name);
+      if (sortBy === 'price_asc') return a.price - b.price;
+      if (sortBy === 'price_desc') return b.price - a.price;
+      if (sortBy === 'stock_asc') return a.stock_quantity - b.stock_quantity;
+      if (sortBy === 'stock_desc') return b.stock_quantity - a.stock_quantity;
+      return 0;
+    });
+  }, [products, search, selectedClassification, selectedCat, selectedStatus, selectedStock, sortBy, categories]);
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(start, start + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedClassification, selectedCat, selectedStatus, selectedStock, sortBy]);
 
   const toggleActiveStatus = async (prod: any) => {
     try {
@@ -203,16 +177,20 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleArchiveProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to deactivate and archive this product?')) return;
+  const handleArchiveConfirmed = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/products?id=${deleteTarget.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setProducts(products.map((p) => (p.id === id ? { ...p, is_active: false } : p)));
+        setProducts(products.map((p) => (p.id === deleteTarget.id ? { ...p, is_active: false } : p)));
+        setDeleteTarget(null);
       }
     } catch (err) {
       console.error('Error archiving product:', err);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -223,7 +201,7 @@ export default function AdminProductsPage() {
         <div>
           <h1 className="admin-page-title">Products &amp; Inventory</h1>
           <p className="admin-page-subtitle">
-            Manage your store catalog, pricing, inventory stock, and visibility.
+            Manage your store catalog ({products.length} total products), stock, and visibility.
           </p>
         </div>
 
@@ -243,39 +221,58 @@ export default function AdminProductsPage() {
             <span>Bulk Import CSV</span>
           </Link>
 
-          <button onClick={openCreateModal} className="admin-action-btn-primary" type="button">
+          <Link href="/admin/products/new" className="admin-action-btn-primary">
             <Plus size={16} />
             <span>Add Product</span>
-          </button>
+          </Link>
         </div>
       </div>
 
-      {/* Filters Bar */}
+      {/* Filter & Search Bar */}
       <div className="admin-filter-bar">
         <div className="admin-search-input-wrap">
           <Search size={16} className="admin-search-icon" />
           <input
             type="search"
-            placeholder="Search by SKU or product name..."
+            placeholder="Search by SKU, product name, or slug..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="admin-search-input"
           />
         </div>
 
+        {/* Classification Filter */}
+        <select
+          value={selectedClassification}
+          onChange={(e) => {
+            setSelectedClassification(e.target.value);
+            setSelectedCat('all');
+          }}
+          className="admin-select"
+        >
+          <option value="all">All Classifications ({classifications.length})</option>
+          {classifications.map((cl) => (
+            <option key={cl} value={cl}>
+              {cl}
+            </option>
+          ))}
+        </select>
+
+        {/* Category Filter */}
         <select
           value={selectedCat}
           onChange={(e) => setSelectedCat(e.target.value)}
           className="admin-select"
         >
-          <option value="">All Categories ({categories.length})</option>
-          {categories.map((c) => (
+          <option value="all">All Categories ({filteredCategoryOptions.length})</option>
+          {filteredCategoryOptions.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
           ))}
         </select>
 
+        {/* Visibility Filter */}
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
@@ -283,8 +280,48 @@ export default function AdminProductsPage() {
         >
           <option value="all">All Visibility</option>
           <option value="active">Active Only</option>
-          <option value="inactive">Inactive / Archived</option>
+          <option value="inactive">Hidden / Archived</option>
         </select>
+
+        {/* Stock Filter */}
+        <select
+          value={selectedStock}
+          onChange={(e) => setSelectedStock(e.target.value)}
+          className="admin-select"
+        >
+          <option value="all">All Stock Levels</option>
+          <option value="in_stock">In Stock (&gt;0)</option>
+          <option value="low_stock">Low Stock (&lt;10)</option>
+          <option value="out_of_stock">Out of Stock (0)</option>
+        </select>
+
+        {/* Sort */}
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="admin-select"
+        >
+          <option value="newest">Sort: Newest First</option>
+          <option value="oldest">Sort: Oldest First</option>
+          <option value="name_asc">Sort: Name (A to Z)</option>
+          <option value="name_desc">Sort: Name (Z to A)</option>
+          <option value="price_asc">Sort: Price (Low to High)</option>
+          <option value="price_desc">Sort: Price (High to Low)</option>
+          <option value="stock_asc">Sort: Stock (Low to High)</option>
+          <option value="stock_desc">Sort: Stock (High to Low)</option>
+        </select>
+      </div>
+
+      {/* Table Results Count */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#6B7280' }}>
+        <span>
+          Showing <strong>{filteredProducts.length}</strong> matching products
+        </span>
+        {totalPages > 1 && (
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        )}
       </div>
 
       {/* Products Table */}
@@ -293,7 +330,7 @@ export default function AdminProductsPage() {
           <div className="login-spinner" />
           <p>Loading catalog products...</p>
         </div>
-      ) : products.length > 0 ? (
+      ) : paginatedProducts.length > 0 ? (
         <div className="admin-table-card">
           <div className="admin-table-wrap">
             <table className="admin-table">
@@ -301,7 +338,7 @@ export default function AdminProductsPage() {
                 <tr>
                   <th>Product</th>
                   <th>SKU</th>
-                  <th>Category</th>
+                  <th>Classification / Category</th>
                   <th>Price</th>
                   <th>Stock Inventory</th>
                   <th>Storefront Status</th>
@@ -309,297 +346,207 @@ export default function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => (
-                  <tr key={p.id} className={!p.is_active ? 'row-inactive' : ''}>
-                    {/* Image & Title */}
-                    <td>
-                      <div className="admin-prod-cell">
-                        <img
-                          src={getAssetPath(Array.isArray(p.images) && p.images[0] ? p.images[0] : '/products/SL001.png')}
-                          alt={p.name}
-                          className="admin-prod-thumb"
-                        />
-                        <div>
-                          <strong className="admin-prod-name">{p.name}</strong>
-                          <span className="admin-prod-slug">{p.slug}</span>
+                {paginatedProducts.map((p) => {
+                  const firstImg = Array.isArray(p.images) && p.images[0] ? p.images[0] : (typeof p.images === 'string' && p.images ? p.images : '/products/SL001.png');
+                  return (
+                    <tr key={p.id} className={!p.is_active ? 'row-inactive' : ''}>
+                      {/* Image & Title */}
+                      <td>
+                        <div className="admin-prod-cell">
+                          <img
+                            src={getAssetPath(firstImg)}
+                            alt={p.name}
+                            className="admin-prod-thumb"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/products/SL001.png';
+                            }}
+                          />
+                          <div>
+                            <strong className="admin-prod-name">{p.name}</strong>
+                            <span className="admin-prod-slug">{p.slug}</span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* SKU */}
-                    <td>
-                      <span className="font-mono font-bold text-xs">{p.sku}</span>
-                    </td>
+                      {/* SKU */}
+                      <td>
+                        <span className="font-mono font-bold text-xs">{p.sku}</span>
+                      </td>
 
-                    {/* Category */}
-                    <td>
-                      <span className="admin-cat-pill">{p.categories?.name || 'General'}</span>
-                    </td>
+                      {/* Category */}
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
+                          {p.categories?.parent_category && (
+                            <span style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              {p.categories.parent_category}
+                            </span>
+                          )}
+                          <span className="admin-cat-pill">{p.categories?.name || 'General'}</span>
+                        </div>
+                      </td>
 
-                    {/* Price */}
-                    <td>
-                      <strong className="text-xs">{formatPrice(p.price)}</strong>
-                      {p.compare_at_price && p.compare_at_price > p.price && (
-                        <span className="admin-compare-price">{formatPrice(p.compare_at_price)}</span>
-                      )}
-                    </td>
-
-                    {/* Stock with quick buttons */}
-                    <td>
-                      <div className="admin-stock-control">
-                        <button
-                          type="button"
-                          onClick={() => updateQuickStock(p, -1)}
-                          className="stock-step-btn"
-                          title="Decrease stock"
-                        >
-                          -
-                        </button>
-                        <span className={`stock-number ${p.stock_quantity < 10 ? 'stock-low' : ''}`}>
-                          {p.stock_quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuickStock(p, 1)}
-                          className="stock-step-btn"
-                          title="Increase stock"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </td>
-
-                    {/* Active toggle */}
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => toggleActiveStatus(p)}
-                        className={`admin-status-toggle ${p.is_active ? 'active' : 'inactive'}`}
-                      >
-                        {p.is_active ? (
-                          <>
-                            <Eye size={12} />
-                            <span>Active</span>
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff size={12} />
-                            <span>Hidden</span>
-                          </>
+                      {/* Price */}
+                      <td>
+                        <strong className="text-xs">{formatPrice(p.price)}</strong>
+                        {p.compare_at_price && p.compare_at_price > p.price && (
+                          <span className="admin-compare-price">{formatPrice(p.compare_at_price)}</span>
                         )}
-                      </button>
-                    </td>
+                      </td>
 
-                    {/* Actions */}
-                    <td>
-                      <div className="admin-actions-cell">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(p)}
-                          className="admin-icon-btn"
-                          title="Edit product"
-                        >
-                          <Edit2 size={15} />
-                        </button>
-                        {p.is_active && (
+                      {/* Stock with quick buttons */}
+                      <td>
+                        <div className="admin-stock-control">
                           <button
                             type="button"
-                            onClick={() => handleArchiveProduct(p.id)}
-                            className="admin-icon-btn text-red-500"
-                            title="Deactivate / Archive product"
+                            onClick={() => updateQuickStock(p, -1)}
+                            className="stock-step-btn"
+                            title="Decrease stock"
                           >
-                            <Trash2 size={15} />
+                            -
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <span className={`stock-number ${p.stock_quantity < 10 ? 'stock-low' : ''}`}>
+                            {p.stock_quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuickStock(p, 1)}
+                            className="stock-step-btn"
+                            title="Increase stock"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Active toggle */}
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => toggleActiveStatus(p)}
+                          className={`admin-status-toggle ${p.is_active ? 'active' : 'inactive'}`}
+                        >
+                          {p.is_active ? (
+                            <>
+                              <Eye size={12} />
+                              <span>Active</span>
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff size={12} />
+                              <span>Hidden</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+
+                      {/* Actions */}
+                      <td>
+                        <div className="admin-actions-cell">
+                          <Link
+                            href={`/admin/products/${p.id}`}
+                            className="admin-icon-btn"
+                            title="Edit product"
+                          >
+                            <Edit2 size={15} />
+                          </Link>
+                          {p.is_active && (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(p)}
+                              className="admin-icon-btn text-red-500"
+                              title="Archive / Hide product"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '16px', borderTop: '1px solid rgba(44,47,54,0.06)' }}>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="admin-action-btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+              >
+                <ChevronLeft size={14} />
+                <span>Previous</span>
+              </button>
+
+              <span style={{ fontSize: '13px', fontWeight: 600, padding: '0 8px' }}>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="admin-action-btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+              >
+                <span>Next</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="admin-empty-card">
           <Package size={48} className="empty-icon" />
           <h3>No products match your filters</h3>
-          <p>Try adjusting your search query or add a new product to your catalog.</p>
+          <p>Try clearing your search query or filters to see all catalog items.</p>
         </div>
       )}
 
-      {/* Add / Edit Product Modal */}
+      {/* Delete / Archive Confirmation Modal */}
       <AnimatePresence>
-        {modalMode && (
+        {deleteTarget && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="address-modal-backdrop"
-            onClick={() => setModalMode(null)}
+            onClick={() => setDeleteTarget(null)}
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="admin-modal-card"
+              className="admin-delete-modal"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="admin-modal-header">
-                <h2 className="admin-modal-title">
-                  {modalMode === 'create' ? 'Add New Product' : 'Edit Product'}
-                </h2>
-                <button onClick={() => setModalMode(null)} className="filter-sidebar-close" type="button">
-                  <X size={20} />
+              <AlertTriangle size={40} style={{ color: '#D97706', margin: '0 auto 12px' }} />
+              <h3>Archive Product?</h3>
+              <p>
+                Are you sure you want to deactivate <span className="delete-product-name">{deleteTarget.name}</span> ({deleteTarget.sku})?
+                It will be hidden from customer browsing but remain in the database for order history.
+              </p>
+              <div className="admin-delete-modal-actions">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="admin-action-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleArchiveConfirmed}
+                  disabled={deleting}
+                  className="admin-action-btn-danger"
+                >
+                  {deleting ? 'Archiving...' : 'Yes, Archive Product'}
                 </button>
               </div>
-
-              {formError && (
-                <div className="login-alert login-alert-error" style={{ marginBottom: '16px' }}>
-                  <AlertCircle size={16} />
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleFormSubmit} className="admin-product-form">
-                <div className="checkout-form-row">
-                  <div className="login-field">
-                    <label>SKU Code *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. SL080"
-                      value={formData.sku}
-                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                      className="checkout-input"
-                      disabled={modalMode === 'edit'}
-                    />
-                  </div>
-
-                  <div className="login-field">
-                    <label>Product Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Velvet Pearl Hair Bow"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="checkout-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="checkout-form-row">
-                  <div className="login-field">
-                    <label>Category *</label>
-                    <select
-                      value={formData.category_id}
-                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                      className="checkout-input"
-                      required
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="login-field">
-                    <label>Custom URL Slug (optional)</label>
-                    <input
-                      type="text"
-                      placeholder="leave blank to auto-generate"
-                      value={formData.slug}
-                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                      className="checkout-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="checkout-form-row-3">
-                  <div className="login-field">
-                    <label>Selling Price (₹) *</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="1"
-                      placeholder="120"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className="checkout-input"
-                    />
-                  </div>
-
-                  <div className="login-field">
-                    <label>Compare Price (₹)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="180"
-                      value={formData.compare_at_price}
-                      onChange={(e) => setFormData({ ...formData, compare_at_price: e.target.value })}
-                      className="checkout-input"
-                    />
-                  </div>
-
-                  <div className="login-field">
-                    <label>Stock Units *</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      placeholder="25"
-                      value={formData.stock_quantity}
-                      onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                      className="checkout-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="login-field">
-                  <label>Image Paths (comma-separated)</label>
-                  <input
-                    type="text"
-                    placeholder="/products/SL080.png"
-                    value={formData.images}
-                    onChange={(e) => setFormData({ ...formData, images: e.target.value })}
-                    className="checkout-input"
-                  />
-                </div>
-
-                <div className="login-field">
-                  <label>Description</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Product details, aesthetic styling tips, and materials..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="checkout-input"
-                    style={{ height: 'auto', padding: '10px 14px' }}
-                  />
-                </div>
-
-                <label className="checkbox-label" style={{ marginTop: '12px' }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  />
-                  <span>Active &amp; Visible in Customer Storefront</span>
-                </label>
-
-                <div className="admin-modal-actions">
-                  <button type="button" onClick={() => setModalMode(null)} className="account-btn-secondary">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={saving} className="admin-action-btn-primary">
-                    {saving ? 'Saving...' : modalMode === 'create' ? 'Create Product' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
             </motion.div>
           </motion.div>
         )}

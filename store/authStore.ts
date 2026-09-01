@@ -308,11 +308,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error) {
         set({ isLoading: false });
+        const msg = (error.message || '').toLowerCase();
+        const code = (error as any).code || '';
+
         // Helpful diagnostic message if SMS provider is not enabled in Supabase Dashboard
-        if (error.message.includes('sms_send_failed') || error.message.includes('SMS provider') || error.message.includes('not configured')) {
+        if (
+          code === 'phone_provider_disabled' ||
+          msg.includes('unsupported phone provider') ||
+          msg.includes('phone_provider_disabled') ||
+          msg.includes('sms_send_failed') ||
+          msg.includes('sms provider') ||
+          msg.includes('not configured') ||
+          msg.includes('provider is not enabled')
+        ) {
           return {
             success: false,
-            error: 'Phone SMS verification requires an SMS provider configured in Supabase Dashboard. You can also sign in with Email & Password.',
+            error: 'SMS OTP requires a Phone Provider (Twilio/MessageBird) configured in your Supabase Dashboard. Please sign in using Email & Password or configure SMS in Supabase.',
           };
         }
         return { success: false, error: error.message };
@@ -325,7 +336,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
     } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: err.message || 'Failed to send OTP.' };
+      const errMsg = err?.message || '';
+      if (errMsg.toLowerCase().includes('failed to fetch') || errMsg.toLowerCase().includes('fetch')) {
+        return {
+          success: false,
+          error: 'Network request failed or Supabase connection blocked. Please check your internet connection, disable browser ad-blockers, or sign in using Email & Password.',
+        };
+      }
+      return { success: false, error: errMsg || 'Failed to send OTP.' };
     }
   },
 
@@ -377,7 +395,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: true };
     } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: err.message || 'Verification failed.' };
+      const errMsg = err?.message || '';
+      if (errMsg.toLowerCase().includes('failed to fetch') || errMsg.toLowerCase().includes('fetch')) {
+        return {
+          success: false,
+          error: 'Network connection error. Please check your connection and try again.',
+        };
+      }
+      return { success: false, error: errMsg || 'Verification failed.' };
     }
   },
 

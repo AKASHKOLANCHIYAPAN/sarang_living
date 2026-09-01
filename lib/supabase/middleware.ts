@@ -40,8 +40,33 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Protect /account and /admin routes
-  if ((pathname.startsWith('/account') || pathname.startsWith('/admin')) && !user) {
+  // ── Admin route protection ──
+  if (pathname.startsWith('/admin')) {
+    // Allow /admin/login to be accessed without auth
+    if (pathname === '/admin/login') {
+      // If already logged in, redirect to admin dashboard
+      if (user) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin';
+        return NextResponse.redirect(url);
+      }
+      return supabaseResponse;
+    }
+
+    // Unauthenticated users → /admin/login
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin/login';
+      return NextResponse.redirect(url);
+    }
+
+    // Authenticated but we let the layout handle admin role check
+    // (server-side getAuthenticatedAdmin in layout.tsx)
+    return supabaseResponse;
+  }
+
+  // ── Account route protection ──
+  if (pathname.startsWith('/account') && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);
@@ -59,3 +84,4 @@ export async function updateSession(request: NextRequest) {
 
   return supabaseResponse;
 }
+
