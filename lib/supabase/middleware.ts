@@ -42,14 +42,8 @@ export async function updateSession(request: NextRequest) {
 
   // ── Admin route protection ──
   if (pathname.startsWith('/admin')) {
-    // Allow /admin/login to be accessed without auth
+    // Allow /admin/login to be accessed without redirection loop
     if (pathname === '/admin/login') {
-      // If already logged in, redirect to admin dashboard
-      if (user) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin';
-        return NextResponse.redirect(url);
-      }
       return supabaseResponse;
     }
 

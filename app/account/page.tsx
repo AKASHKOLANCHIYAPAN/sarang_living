@@ -198,7 +198,7 @@ export default function AccountPage() {
     });
   };
 
-  const isAdmin = user.role === 'admin';
+  const isAdmin = user.role?.toLowerCase() === 'admin';
 
   return (
     <div className="account-page-container container-sarang">
@@ -264,6 +264,24 @@ export default function AccountPage() {
               <span>Shipping Addresses</span>
               <ChevronRight size={16} className="nav-arrow" />
             </button>
+
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="account-nav-btn"
+                style={{
+                  background: 'rgba(196, 136, 138, 0.12)',
+                  color: 'var(--color-accent-teal, #5A7E95)',
+                  fontWeight: 600,
+                  border: '1px solid rgba(196, 136, 138, 0.25)',
+                  marginTop: '12px',
+                }}
+              >
+                <ShieldCheck size={18} style={{ color: '#C4888A' }} />
+                <span>Admin Dashboard</span>
+                <ChevronRight size={16} className="nav-arrow" />
+              </Link>
+            )}
           </nav>
         </aside>
 
@@ -293,6 +311,56 @@ export default function AccountPage() {
                   <span className="box-value">INR (₹)</span>
                 </div>
               </div>
+
+              {isAdmin && (
+                <div
+                  style={{
+                    marginTop: '20px',
+                    padding: '20px',
+                    background: 'linear-gradient(135deg, rgba(196, 136, 138, 0.08) 0%, rgba(90, 126, 149, 0.08) 100%)',
+                    borderRadius: 'var(--radius-md, 12px)',
+                    border: '1px solid rgba(196, 136, 138, 0.25)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <ShieldCheck size={20} style={{ color: '#C4888A' }} />
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Store Administrator Controls</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#666', marginBottom: '14px', lineHeight: 1.4 }}>
+                    You have administrator privileges to edit products, update stock quantities, upload images, manage categories, and handle orders.
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    <Link
+                      href="/admin/products"
+                      className="btn-sarang btn-sarang-primary"
+                      style={{ padding: '8px 16px', fontSize: '13px', textDecoration: 'none' }}
+                    >
+                      ✏️ Edit &amp; Manage Products
+                    </Link>
+                    <Link
+                      href="/admin/products/new"
+                      className="btn-sarang btn-sarang-secondary"
+                      style={{ padding: '8px 16px', fontSize: '13px', textDecoration: 'none' }}
+                    >
+                      ➕ Add New Product
+                    </Link>
+                    <Link
+                      href="/admin/categories"
+                      className="btn-sarang btn-sarang-secondary"
+                      style={{ padding: '8px 16px', fontSize: '13px', textDecoration: 'none' }}
+                    >
+                      📁 Manage Categories
+                    </Link>
+                    <Link
+                      href="/admin/orders"
+                      className="btn-sarang btn-sarang-secondary"
+                      style={{ padding: '8px 16px', fontSize: '13px', textDecoration: 'none' }}
+                    >
+                      📦 View Orders
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               <div className="panel-divider" />
 

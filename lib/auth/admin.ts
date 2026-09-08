@@ -30,14 +30,22 @@ export async function getAuthenticatedAdmin(): Promise<AdminUser | null> {
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile || profile.role !== 'admin') {
+    let role = profile?.role?.trim().toLowerCase();
+    
+    // Fallback to auth user metadata if profile table check had an issue
+    if (!role && user.user_metadata?.role) {
+      role = String(user.user_metadata.role).trim().toLowerCase();
+    }
+
+    if (role !== 'admin') {
+      console.warn(`[Admin Guard] User ${user.email} (${user.id}) denied admin access. Role found: "${role || 'none'}"`);
       return null;
     }
 
     return {
       id: user.id,
       email: user.email,
-      fullName: profile.full_name || undefined,
+      fullName: profile?.full_name || user.user_metadata?.full_name || undefined,
       role: 'admin',
     };
   } catch (err) {

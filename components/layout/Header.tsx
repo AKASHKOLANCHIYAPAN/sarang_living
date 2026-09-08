@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, User, ShoppingBag, Menu, X } from 'lucide-react';
+import { Search, User, ShoppingBag, Menu, X, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cartStore';
@@ -92,6 +92,23 @@ export default function Header() {
             >
               <Search size={20} />
             </button>
+
+            {isAuthenticated && user?.role?.toLowerCase() === 'admin' && (
+              <Link
+                href="/admin"
+                className="header-icon-btn"
+                aria-label="Admin Dashboard"
+                title="Open Admin Dashboard"
+                style={{
+                  background: 'rgba(196, 136, 138, 0.15)',
+                  color: '#C4888A',
+                  borderRadius: '50%',
+                  padding: '6px',
+                }}
+              >
+                <ShieldCheck size={20} />
+              </Link>
+            )}
 
             <Link
               href={isAuthenticated ? '/account' : '/login'}

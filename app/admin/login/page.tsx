@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
         .eq('id', data.user.id)
         .single();
 
-      if (profileError || !profile || profile.role !== 'admin') {
+      if (profileError || !profile || profile.role?.toLowerCase() !== 'admin') {
         await supabase.auth.signOut();
         setError('Access denied. This login is for store administrators only.');
         setLoading(false);
