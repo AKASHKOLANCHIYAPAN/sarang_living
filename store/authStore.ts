@@ -253,6 +253,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (error.message.includes('User already registered') || error.code === 'user_already_exists') {
           errorMessage = 'An account with this email address already exists. Please sign in instead.';
+        } else if (
+          error.message.toLowerCase().includes('rate limit') ||
+          error.message.toLowerCase().includes('over_email_send_rate_limit') ||
+          (error as any).status === 429
+        ) {
+          errorMessage = 'Too many email requests sent. Please wait a few minutes before trying again, or check your email inbox for previous verification link.';
         }
 
         return { success: false, error: errorMessage };
@@ -427,7 +433,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        let msg = error.message;
+        if (
+          error.message.toLowerCase().includes('rate limit') ||
+          error.message.toLowerCase().includes('over_email_send_rate_limit') ||
+          (error as any).status === 429
+        ) {
+          msg = 'Too many password reset emails sent. Please wait a few minutes before requesting another link.';
+        }
+        return { success: false, error: msg };
       }
 
       return {

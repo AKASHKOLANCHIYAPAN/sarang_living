@@ -30,34 +30,66 @@ export default function ImageUploader({ images, onChange, maxImages = 10 }: Imag
     const filesToUpload = fileArray.slice(0, remaining);
     setUploading(true);
     setError(null);
-    setUploadProgress(10);
+    setUploadProgress(5);
+
+    const urls: string[] = [];
+    const errs: string[] = [];
+    const totalFiles = filesToUpload.length;
 
     try {
-      const formData = new FormData();
-      filesToUpload.forEach((file) => formData.append('files', file));
+      for (let i = 0; i < totalFiles; i++) {
+        const file = filesToUpload[i];
 
-      setUploadProgress(30);
+        // Client-side 5MB validation
+        if (file.size > 5 * 1024 * 1024) {
+          errs.push(`"${file.name}" exceeds the 5MB size limit.`);
+          continue;
+        }
 
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-      });
+        const formData = new FormData();
+        formData.append('files', file);
 
-      setUploadProgress(80);
+        const currentProgress = Math.round(10 + ((i + 0.5) / totalFiles) * 80);
+        setUploadProgress(currentProgress);
 
-      const data = await res.json();
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!res.ok || !data.success) {
-        setError(data.error || 'Upload failed.');
-        return;
+        // Safe response parsing to prevent 'Unexpected token R' on 413 / HTML response
+        const contentType = res.headers.get('content-type') || '';
+        let data: any = {};
+
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        } else {
+          const textResponse = await res.text();
+          if (res.status === 413 || textResponse.toLowerCase().includes('entity too large')) {
+            errs.push(`"${file.name}" exceeds server payload limit. Please use an image under 5MB.`);
+          } else {
+            errs.push(`"${file.name}" failed to upload (Server error ${res.status}).`);
+          }
+          continue;
+        }
+
+        if (!res.ok || !data.success) {
+          errs.push(data.error || `Upload failed for "${file.name}".`);
+        } else if (data.urls && data.urls.length > 0) {
+          urls.push(...data.urls);
+        }
+
+        if (data.errors && data.errors.length > 0) {
+          errs.push(...data.errors);
+        }
       }
 
-      if (data.urls && data.urls.length > 0) {
-        onChange([...images, ...data.urls]);
+      if (urls.length > 0) {
+        onChange([...images, ...urls]);
       }
 
-      if (data.errors && data.errors.length > 0) {
-        setError(data.errors.join(' '));
+      if (errs.length > 0) {
+        setError(errs.join(' '));
       }
 
       setUploadProgress(100);
