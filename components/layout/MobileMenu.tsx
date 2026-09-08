@@ -4,13 +4,19 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { X, ChevronRight, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCategories, Category } from '@/lib/products-db';
 import { getAssetPath } from '@/lib/utils';
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const mainCategories = [
+  { label: 'Hair Accessories', href: '/products' },
+  { label: 'Jewellery', href: '/products?category=jewellery' },
+  { label: 'Stationary', href: '/products?category=stationary' },
+  { label: 'Lifestyle Products', href: '/products?category=lifestyle-products' },
+];
 
 const menuLinks = [
   { label: 'Shop All', href: '/products' },
@@ -19,20 +25,6 @@ const menuLinks = [
 ];
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
-  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
-
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const cats = await getCategories();
-        setCategoriesList(cats);
-      } catch (err) {
-        console.error('Error loading mobile menu categories:', err);
-      }
-    }
-    loadCategories();
-  }, []);
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -93,20 +85,20 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             {/* Category Links */}
             <div className="mobile-menu-section">
               <span className="mobile-menu-section-title">Categories</span>
-              {categoriesList.map((cat, i) => (
+              {mainCategories.map((cat, i) => (
                 <motion.div
-                  key={cat.slug}
+                  key={cat.href + cat.label}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.03 }}
+                  transition={{ delay: 0.2 + i * 0.05 }}
                 >
                   <Link
-                    href={`/products?category=${cat.slug}`}
+                    href={cat.href}
                     className="mobile-menu-link"
                     onClick={onClose}
                   >
-                    {cat.name}
-                    <span className="mobile-menu-count">{cat.productCount}</span>
+                    {cat.label}
+                    <ChevronRight size={14} />
                   </Link>
                 </motion.div>
               ))}
@@ -122,7 +114,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 Account Profile &amp; Orders
               </Link>
               <p className="mobile-menu-tagline">
-                <Heart size={12} fill="var(--color-accent-blush)" stroke="var(--color-accent-blush)" />
+                <Heart size={12} fill="var(--color-accent-coral)" stroke="var(--color-accent-coral)" />
                 Love every little thing
               </p>
             </div>

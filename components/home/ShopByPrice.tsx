@@ -6,8 +6,6 @@ import Link from 'next/link';
 import { priceBuckets } from '@/lib/utils';
 import { getProducts, Product } from '@/lib/products-db';
 
-const bucketEmojis = ['✨', '💫', '🌸', '💎', '👑'];
-
 export default function ShopByPrice() {
   const [productsList, setProductsList] = useState<Product[]>([]);
 
@@ -48,7 +46,7 @@ export default function ShopByPrice() {
           </motion.div>
         </div>
 
-        {/* Price Buckets */}
+        {/* Price Buckets — No Emojis */}
         <div className="price-bucket-grid">
           {priceBuckets.map((bucket, index) => {
             const count = getCountForBucket(bucket.min, bucket.max);
@@ -64,7 +62,6 @@ export default function ShopByPrice() {
                   href={`/products?priceMin=${bucket.min}&priceMax=${bucket.max}`}
                   className="price-bucket"
                 >
-                  <span className="price-bucket-emoji">{bucketEmojis[index]}</span>
                   <span className="price-bucket-label">{bucket.label}</span>
                   <span className="price-bucket-count">{count} items</span>
                 </Link>

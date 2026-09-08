@@ -10,10 +10,8 @@ export default function Hero() {
   return (
     <section className="hero" aria-label="Welcome to Sarang Living">
       <div className="hero-bg">
-        {/* Decorative elements */}
         <div className="hero-orb hero-orb-1" />
         <div className="hero-orb hero-orb-2" />
-        <div className="hero-orb hero-orb-3" />
       </div>
 
       <div className="container-sarang hero-content">
@@ -40,7 +38,7 @@ export default function Hero() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="hero-tagline"
           >
-            <Heart size={14} fill="#C4888A" stroke="#C4888A" />
+            <Heart size={14} fill="#E85D75" stroke="#E85D75" />
             사랑 · Love every little thing
           </motion.p>
 
@@ -51,11 +49,9 @@ export default function Hero() {
             transition={{ delay: 0.3, duration: 0.7 }}
             className="hero-heading"
           >
-            Curated Hair
+            Your One-Stop Shop for
             <br />
-            <span className="hero-heading-accent">Accessories</span>
-            <br />
-            You&apos;ll Adore
+            <span className="hero-heading-accent">Accessories & Lifestyle</span>
           </motion.h1>
 
           {/* Description */}
@@ -65,9 +61,8 @@ export default function Hero() {
             transition={{ delay: 0.5, duration: 0.6 }}
             className="hero-description"
           >
-            Discover our handpicked collection of Korean-minimalist hair accessories — 
-            from delicate claw clips to statement headbands. Each piece is chosen to 
-            make everyday moments feel a little more beautiful.
+            Discover curated hair accessories, stunning jewellery, aesthetic stationery,
+            and lifestyle products — all handpicked to make your everyday moments special.
           </motion.p>
 
           {/* CTAs */}
@@ -103,12 +98,12 @@ export default function Hero() {
             </div>
             <div className="hero-stat-divider" />
             <div className="hero-stat">
-              <span className="hero-stat-number">10</span>
+              <span className="hero-stat-number">4</span>
               <span className="hero-stat-label">Categories</span>
             </div>
             <div className="hero-stat-divider" />
             <div className="hero-stat">
-              <span className="hero-stat-number">$10</span>
+              <span className="hero-stat-number">₹10</span>
               <span className="hero-stat-label">Starting</span>
             </div>
           </motion.div>

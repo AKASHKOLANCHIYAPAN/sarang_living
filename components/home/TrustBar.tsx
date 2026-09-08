@@ -7,7 +7,7 @@ const trustItems = [
   {
     icon: Truck,
     title: 'Free Express Shipping',
-    description: 'On all orders above $99',
+    description: 'On all orders above ₹999',
   },
   {
     icon: RotateCcw,
@@ -21,8 +21,8 @@ const trustItems = [
   },
   {
     icon: Heart,
-    title: 'Korean Aesthetics',
-    description: 'Handpicked minimalist pieces',
+    title: 'Curated Collection',
+    description: 'Handpicked aesthetic pieces',
   },
 ];
 

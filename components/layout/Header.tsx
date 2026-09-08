@@ -13,10 +13,10 @@ import SearchOverlay from './SearchOverlay';
 
 const navLinks = [
   { label: 'Shop All', href: '/products' },
-  { label: 'Claw Clips', href: '/products?category=claw-clips' },
-  { label: 'Scrunchies', href: '/products?category=scrunchies' },
-  { label: 'Hair Bows', href: '/products?category=hair-bows' },
-  { label: 'Bestsellers', href: '/products?sort=bestsellers' },
+  { label: 'Hair Accessories', href: '/products' },
+  { label: 'Jewellery', href: '/products?category=jewellery' },
+  { label: 'Stationary', href: '/products?category=stationary' },
+  { label: 'Lifestyle', href: '/products?category=lifestyle-products' },
 ];
 
 export default function Header() {
@@ -70,7 +70,7 @@ export default function Header() {
 
             <nav className="header-nav" aria-label="Main navigation">
               {navLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="header-nav-link">
+                <Link key={link.href + link.label} href={link.href} className="header-nav-link">
                   {link.label}
                 </Link>
               ))}
@@ -100,8 +100,8 @@ export default function Header() {
                 aria-label="Admin Dashboard"
                 title="Open Admin Dashboard"
                 style={{
-                  background: 'rgba(196, 136, 138, 0.15)',
-                  color: '#C4888A',
+                  background: 'rgba(232, 93, 117, 0.12)',
+                  color: '#E85D75',
                   borderRadius: '50%',
                   padding: '6px',
                 }}
