@@ -65,7 +65,20 @@ function LoginContent() {
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+
+    const verified = searchParams.get('verified');
+    const errParam = searchParams.get('error');
+
+    if (verified === 'true') {
+      setSuccess('Email verified successfully! You can now access your account.');
+    } else if (errParam) {
+      if (errParam === 'invalid_verification_link') {
+        setError('Verification link is invalid or has expired. Please request a new link.');
+      } else {
+        setError(errParam);
+      }
+    }
+  }, [checkAuth, searchParams]);
 
   useEffect(() => {
     if (isAuthenticated) {

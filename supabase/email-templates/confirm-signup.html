@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Sarang Living - Confirm Your Email</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F8F9FA;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1A1A2E;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%;
+      table-layout: fixed;
+      background-color: #F8F9FA;
+      padding: 40px 16px;
+    }
+    .main-card {
+      max-width: 580px;
+      margin: 0 auto;
+      background-color: #FFFFFF;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      border: 1px solid #EBEBEB;
+    }
+    .header-bar {
+      background: #1A1A2E;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .header-logo {
+      font-size: 24px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+    .header-tagline {
+      font-size: 13px;
+      color: #E85D75;
+      margin-top: 6px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .content-body {
+      padding: 36px 32px;
+    }
+    .greeting {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1A1A2E;
+      margin-bottom: 16px;
+    }
+    .intro-paragraph {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #4A4A68;
+      margin-bottom: 20px;
+    }
+    .features-box {
+      background-color: #FFF5F7;
+      border-left: 4px solid #E85D75;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 28px;
+    }
+    .features-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1A1A2E;
+      margin-bottom: 8px;
+    }
+    .features-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      color: #555568;
+      line-height: 1.5;
+    }
+    .cta-container {
+      text-align: center;
+      margin: 32px 0;
+    }
+    .cta-btn {
+      display: inline-block;
+      background-color: #E85D75;
+      color: #FFFFFF !important;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 16px 36px;
+      border-radius: 50px;
+      box-shadow: 0 4px 14px rgba(232, 93, 117, 0.35);
+      transition: all 0.2s ease;
+    }
+    .direct-link-box {
+      font-size: 12px;
+      color: #8E8EA0;
+      background-color: #F5F5F5;
+      padding: 12px 16px;
+      border-radius: 8px;
+      word-break: break-all;
+      margin-bottom: 24px;
+    }
+    .footer-bar {
+      background-color: #16162B;
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.6;
+    }
+    .footer-bar a {
+      color: #E85D75;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="main-card">
+      <!-- Header -->
+      <div class="header-bar">
+        <div class="header-logo">✨ SARANG LIVING</div>
+        <div class="header-tagline">Everyday Luxury &amp; Lifestyle Essentials</div>
+      </div>
+
+      <!-- Content -->
+      <div class="content-body">
+        <div class="greeting">
+          Welcome to Sarang Living{{ if .UserMetaData.full_name }}, {{ .UserMetaData.full_name }}{{ end }}!
+        </div>
+
+        <p class="intro-paragraph">
+          Thank you for creating an account with <strong>Sarang Living</strong>! We are delighted to have you join our community.
+        </p>
+
+        <p class="intro-paragraph">
+          Sarang Living is your destination for premium Korean-inspired hair accessories, handcrafted jewellery, aesthetic stationery, and curated lifestyle products designed to add elegance and charm to your everyday routine.
+        </p>
+
+        <!-- Intro Highlight Box -->
+        <div class="features-box">
+          <div class="features-title">What you get with your Sarang Living account:</div>
+          <ul class="features-list">
+            <li>Express checkout &amp; saved shipping addresses</li>
+            <li>Real-time order tracking &amp; order history</li>
+            <li>Exclusive access to new arrivals &amp; budget deals</li>
+          </ul>
+        </div>
+
+        <p class="intro-paragraph" style="margin-bottom: 8px;">
+          Please verify your email address to activate your account and complete registration:
+        </p>
+
+        <!-- CTA Button -->
+        <div class="cta-container">
+          <a href="{{ .ConfirmationURL }}" target="_blank" class="cta-btn">
+            Verify My Account &amp; Sign In &rarr;
+          </a>
+        </div>
+
+        <p class="intro-paragraph" style="font-size: 13px; color: #8E8EA0; margin-bottom: 8px;">
+          If the button above does not work, copy and paste the link below into your web browser:
+        </p>
+        <div class="direct-link-box">
+          {{ .ConfirmationURL }}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer-bar">
+        <p style="margin: 0 0 8px 0;">
+          Need help? Chat with us on WhatsApp: <strong>+91 93630 04220</strong>
+        </p>
+        <p style="margin: 0;">
+          &copy; Sarang Living. All rights reserved. | <a href="https://sarangliving.in">www.sarangliving.in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

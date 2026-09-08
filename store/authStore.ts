@@ -229,6 +229,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
+      const redirectUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : process.env.NEXT_PUBLIC_SITE_URL
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+          : undefined;
+
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -236,6 +243,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           data: {
             full_name: cleanName,
           },
+          emailRedirectTo: redirectUrl,
         },
       });
 
