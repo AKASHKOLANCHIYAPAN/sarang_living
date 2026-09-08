@@ -293,16 +293,16 @@ function LoginContent() {
             </p>
             <div className="login-brand-features">
               <div className="login-feature-item">
-                <ShieldCheck size={18} />
-                <span>Supabase Secure Authentication</span>
-              </div>
-              <div className="login-feature-item">
-                <Lock size={18} />
-                <span>Encrypted credentials &amp; session security</span>
+                <Sparkles size={18} />
+                <span>Curated Korean Hair &amp; Lifestyle Accessories</span>
               </div>
               <div className="login-feature-item">
                 <CheckCircle2 size={18} />
-                <span>Instant profile &amp; order access</span>
+                <span>Save Addresses for Fast Checkout</span>
+              </div>
+              <div className="login-feature-item">
+                <ShieldCheck size={18} />
+                <span>Track Your Orders &amp; Order History</span>
               </div>
             </div>
           </div>
@@ -871,8 +871,8 @@ function LoginContent() {
             </AnimatePresence>
 
             <div className="login-footer">
-              <ShieldCheck size={14} />
-              <span>Protected by Supabase Auth Security</span>
+              <Sparkles size={14} />
+              <span>Sarang Living — Everyday Luxury &amp; Lifestyle</span>
             </div>
           </motion.div>
         </div>

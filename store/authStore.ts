@@ -331,7 +331,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         ) {
           return {
             success: false,
-            error: 'SMS OTP requires a Phone Provider (Twilio/MessageBird) configured in your Supabase Dashboard. Please sign in using Email & Password or configure SMS in Supabase.',
+            error: 'Mobile verification is temporarily unavailable. Please sign in using your Email & Password.',
           };
         }
         return { success: false, error: error.message };
@@ -348,7 +348,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (errMsg.toLowerCase().includes('failed to fetch') || errMsg.toLowerCase().includes('fetch')) {
         return {
           success: false,
-          error: 'Network request failed or Supabase connection blocked. Please check your internet connection, disable browser ad-blockers, or sign in using Email & Password.',
+          error: 'Unable to connect to Sarang Living services. Please check your internet connection and try again.',
         };
       }
       return { success: false, error: errMsg || 'Failed to send OTP.' };

@@ -241,7 +241,7 @@ export default function AccountPage() {
               onClick={() => setActiveTab('profile')}
             >
               <User size={18} />
-              <span>Profile &amp; Security</span>
+              <span>Profile &amp; Details</span>
               <ChevronRight size={16} className="nav-arrow" />
             </button>
 
@@ -364,7 +364,7 @@ export default function AccountPage() {
 
               <div className="panel-divider" />
 
-              <h3 className="panel-subheading">Security &amp; Password</h3>
+              <h3 className="panel-subheading">Password &amp; Account Settings</h3>
               <p className="panel-subtitle">
                 Request a password reset link sent to your registered email.
               </p>

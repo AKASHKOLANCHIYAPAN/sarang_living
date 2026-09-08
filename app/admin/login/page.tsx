@@ -110,9 +110,9 @@ export default function AdminLoginPage() {
         </div>
 
         <div style={{ marginTop: '24px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-          <ShieldCheck size={14} style={{ color: '#5A9E6F' }} />
+          <ShieldCheck size={14} style={{ color: '#E85D75' }} />
           <span style={{ fontSize: '11px', color: '#9198A1' }}>
-            Secured by Supabase Authentication
+            Sarang Living Management Portal
           </span>
         </div>
       </div>
